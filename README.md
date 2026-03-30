@@ -156,12 +156,12 @@ npm start
 
 ## 👥 Team Members
 
-| Name | Role | GitHub Profile | Responsibilities |
-|------|------|---------------|----------------|
-| Theekshana | Backend | https://github.com/TheekshanaSewmini | Module A – Facilities & Assets Catalogue |
-| Danupa | Backend | https://github.com/GdanupaThamode | Module B – Booking Management |
-| Member 3 | Backend | - | Module C – Maintenance & Incident Ticketing (TBD) |
-| Damsi | Fullstack | https://github.com/Damsi119 | Module E – Authentication & Authorization |
+| Name | GitHub Profile | Responsibilities |
+|------|---------------|----------------|
+| Theekshana | [Profile](https://github.com/TheekshanaSewmini) | Facilities & Assets Catalogue |
+| Danupa | [Profile](https://github.com/GdanupaThamode) | Booking Management |
+| Member 3 | - | Module C – Maintenance & Incident Ticketing (TBD) |
+| Damsi | [Profile](https://github.com/Damsi119) | Authentication & Authorization |
 
 ---
 
