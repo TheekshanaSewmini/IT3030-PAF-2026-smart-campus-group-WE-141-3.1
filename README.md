@@ -160,7 +160,7 @@ npm start
 |------|---------------|----------------|
 | Theekshana | [Profile](https://github.com/TheekshanaSewmini) | Facilities & Assets Catalogue |
 | Danupa | [Profile](https://github.com/GdanupaThamode) | Booking Management |
-| Member 3 | - | Module C – Maintenance & Incident Ticketing (TBD) |
+| Member 3 | - | Maintenance & Incident Ticketing (TBD) |
 | Damsi | [Profile](https://github.com/Damsi119) | Authentication & Authorization |
 
 ---
