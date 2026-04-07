@@ -45,16 +45,6 @@ This system provides a centralized platform to manage **university facilities, b
 
 ---
 
-### 🛠 Module C – Maintenance & Incident Ticketing
-- Create incident tickets for resources or locations
-- Include category, description, priority, and contact details
-- Upload up to 3 image attachments
-- Ticket workflow: **OPEN → IN_PROGRESS → RESOLVED → CLOSED**
-- Assign technicians and update resolution notes
-- Comment system with ownership rules
-
----
-
 ### 🔐 Module E – Authentication & Authorization
 - OAuth 2.0 authentication (Google Sign-In)
 - Role-based access control:
@@ -148,8 +138,6 @@ npm start
 | POST | /api/bookings | Create booking |
 | GET | /api/bookings | Get bookings |
 | PUT | /api/bookings/{id} | Update booking |
-| POST | /api/tickets | Create ticket |
-| PUT | /api/tickets/{id} | Update ticket |
 | POST | /api/auth/login | OAuth login |
 
 ---
@@ -160,7 +148,6 @@ npm start
 |------|---------------|----------------|
 | Theekshana | [Profile](https://github.com/TheekshanaSewmini) | Facilities & Assets Catalogue |
 | Danupa | [Profile](https://github.com/GdanupaThamode) | Booking Management |
-| Member 3 | - | Maintenance & Incident Ticketing (TBD) |
 | Damsi | [Profile](https://github.com/Damsi119) | Authentication & Authorization |
 
 ---
@@ -169,7 +156,6 @@ npm start
 
 - Booking conflict validation system
 - Role-based UI rendering
-- Image upload support for tickets
 - Clean and user-friendly interface
 
 ---
