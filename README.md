@@ -2,7 +2,7 @@
 
 A full-stack web application developed for the **IT3030 – Programming Applications and Frameworks (PAF) Assignment 2026** at SLIIT.
 
-This system provides a centralized platform to manage **university facilities, bookings, maintenance tickets, and secure access control**, ensuring efficient and organized campus operations.
+This system provides a centralized platform to manage **university facilities, bookings, and secure access control**, ensuring efficient and organized campus operations.
 
 ---
 
