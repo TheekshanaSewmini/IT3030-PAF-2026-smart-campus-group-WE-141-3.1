@@ -50,7 +50,6 @@ This system provides a centralized platform to manage **university facilities, b
 - Role-based access control:
   - USER
   - ADMIN
-  - TECHNICIAN (optional)
 - Secure API endpoints using Spring Security
 - Protected frontend routes based on roles
 
