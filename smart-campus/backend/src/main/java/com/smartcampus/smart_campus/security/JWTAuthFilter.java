@@ -1,5 +1,6 @@
 package com.smartcampus.smart_campus.security;
 
+import com.smartcampus.smart_campus.utils.JwtUtils;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
