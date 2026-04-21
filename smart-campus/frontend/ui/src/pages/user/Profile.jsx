@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../../api";
+import { normalizeRole, roleHomePath } from "../../utils/roleHome";
 
 function buildAssetUrl(path) {
     if (!path) {
@@ -25,34 +26,15 @@ export default function Profile() {
             try {
                 const profileResponse = await api.get("/user/me");
                 setProfile(profileResponse.data);
-                return;
-            } catch (err) {
-                if (err.response?.status === 403) {
-                    try {
-                        const adminProfileResponse = await api.get("/user/Admin/me");
-                        setProfile(adminProfileResponse.data);
-                        return;
-                    } catch (adminErr) {
-                        const adminStatus = adminErr.response?.status;
-
-                        if (adminStatus === 401 || adminStatus === 403) {
-                            navigate("/login");
-                            return;
-                        }
-
-                        setError(adminErr.response?.data?.message || "Failed to load profile.");
-                        return;
-                    }
-                }
-
-                const status = err.response?.status;
+            } catch (error) {
+                const status = error.response?.status;
 
                 if (status === 401 || status === 403) {
-                    navigate("/login");
+                    navigate("/login", { replace: true });
                     return;
                 }
 
-                setError(err.response?.data?.message || "Failed to load profile.");
+                setError(error.response?.data?.message || "Failed to load profile.");
             }
         };
 
@@ -82,7 +64,8 @@ export default function Profile() {
 
     const profileImage = buildAssetUrl(profile?.profileImageUrl);
     const coverImage = buildAssetUrl(profile?.coverImageUrl);
-    const roleLabel = String(profile?.role || "").replace("ROLE_", "") || "USER";
+    const roleLabel = normalizeRole(profile?.role) || "USER";
+    const homePath = roleHomePath(profile?.role);
     const initials = (profile?.name?.[0] || "U").toUpperCase();
     const fullName = `${profile?.name || ""} ${profile?.lastName || ""}`.trim();
 
@@ -97,8 +80,7 @@ export default function Profile() {
                     </div>
 
                     <div className="nav-group">
-                        <Link className="nav-link" to="/home">Home</Link>
-                        <Link className="nav-link" to="/dashboard">Dashboard</Link>
+                        <Link className="nav-link" to={homePath}>Home</Link>
                         <Link className="nav-link" to="/settings">Settings</Link>
                         <button className="btn btn-danger" type="button" onClick={handleLogout}>
                             Logout

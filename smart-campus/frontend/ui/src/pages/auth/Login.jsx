@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../../api";
+import { roleHomePath } from "../../utils/roleHome";
 
 const getErrorMessage = (error, fallback) => {
     const payload = error?.response?.data;
@@ -71,15 +72,9 @@ export default function Login() {
                 return;
             }
 
-            const role = String(response.data.role || "").toUpperCase();
+            const role = response.data.role;
             setNotice({ type: "success", text: "Login successful. Redirecting..." });
-
-            if (role.includes("ADMIN")) {
-                navigate("/dashboard", { replace: true });
-                return;
-            }
-
-            navigate("/home", { replace: true });
+            navigate(roleHomePath(role), { replace: true });
         } catch (error) {
             setNotice({
                 type: "error",

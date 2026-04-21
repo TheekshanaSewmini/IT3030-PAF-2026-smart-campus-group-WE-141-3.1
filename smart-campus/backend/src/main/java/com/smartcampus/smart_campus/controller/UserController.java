@@ -166,15 +166,21 @@ public class UserController {
 
 
     @GetMapping("/Admin/me")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserDto.UserProfileDto> getAdminProfile(@AuthenticationPrincipal User loggedUser) {
         return ResponseEntity.ok(userProfileService.getProfile(loggedUser.getUserId()));
     }
 
-    @GetMapping("Admin/dashboard")
+    @GetMapping("/Admin/dashboard")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserDto.UserHomeDto> getAdminHome(@AuthenticationPrincipal User loggedUser) {
-        // User is injected by Spring Security
         return ResponseEntity.ok(userProfileService.getUserHome(loggedUser.getUserId()));
     }
 
+    @GetMapping("/techi/techdashboard")
+    @PreAuthorize("hasRole('TECHNICIAN')")
+    public ResponseEntity<UserDto.UserHomeDto> getTechHome(@AuthenticationPrincipal User loggedUser) {
+        return ResponseEntity.ok(userProfileService.getUserHome(loggedUser.getUserId()));
+    }
 
 }
