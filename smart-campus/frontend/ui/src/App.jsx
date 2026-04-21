@@ -5,6 +5,7 @@ import VerifyOtp from "./pages/auth/VerifyOtp.jsx";
 import ForgotPassword from "./pages/user/ForgotPassword.jsx";
 import Home from "./pages/user/Home.jsx";
 import Dashboard from "./pages/user/Dashboard.jsx";
+import TechHome from "./pages/user/TechHome.jsx";
 import Profile from "./pages/user/Profile.jsx";
 import Settings from "./pages/user/Settings.jsx";
 
@@ -20,6 +21,7 @@ export default function App() {
 
                 <Route path="/home" element={<Home />} />
                 <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/tech-home" element={<TechHome />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/settings" element={<Settings />} />
 

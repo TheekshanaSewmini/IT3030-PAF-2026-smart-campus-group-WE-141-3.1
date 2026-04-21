@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../../api";
+import { normalizeRole, roleHomePath } from "../../utils/roleHome";
 
 function getErrorMessage(error, fallback) {
     const payload = error?.response?.data;
@@ -33,32 +34,27 @@ export default function Home() {
                 setHomeData(homeResponse.data);
                 setProfileData(profileResponse.data);
             } catch (userError) {
-                if (userError.response?.status === 403) {
-                    try {
-                        const [adminDashboardResponse, adminProfileResponse] = await Promise.all([
-                            api.get("/user/Admin/dashboard"),
-                            api.get("/user/Admin/me"),
-                        ]);
+                const status = userError.response?.status;
+                if (status === 401) {
+                    navigate("/login", { replace: true });
+                    return;
+                }
 
-                        setHomeData(adminDashboardResponse.data);
-                        setProfileData(adminProfileResponse.data);
-                        return;
-                    } catch (adminError) {
-                        const status = adminError.response?.status;
-                        if (status === 401 || status === 403) {
+                if (status === 403) {
+                    try {
+                        const profileResponse = await api.get("/user/me");
+                        const redirectPath = roleHomePath(profileResponse.data?.role);
+
+                        if (redirectPath !== "/home") {
+                            navigate(redirectPath, { replace: true });
+                            return;
+                        }
+                    } catch (profileError) {
+                        if (profileError.response?.status === 401) {
                             navigate("/login", { replace: true });
                             return;
                         }
-
-                        setError(getErrorMessage(adminError, "Failed to load home details."));
-                        return;
                     }
-                }
-
-                const status = userError.response?.status;
-                if (status === 401 || status === 403) {
-                    navigate("/login", { replace: true });
-                    return;
                 }
 
                 setError(getErrorMessage(userError, "Failed to load home details."));
@@ -86,7 +82,7 @@ export default function Home() {
     }
 
     const fullName = `${profileData?.name || ""} ${profileData?.lastName || ""}`.trim() || "User";
-    const roleLabel = String(profileData?.role || "").replace("ROLE_", "") || "USER";
+    const roleLabel = normalizeRole(profileData?.role) || "USER";
 
     return (
         <div className="page-shell">
@@ -98,8 +94,8 @@ export default function Home() {
                         <p className="subtitle">{homeData?.welcomeMessage || "Welcome to Smart Campus."}</p>
                     </div>
                     <div className="nav-group">
-                        <Link className="nav-link" to="/dashboard">
-                            Dashboard
+                        <Link className="nav-link" to="/home">
+                            Home
                         </Link>
                         <Link className="nav-link" to="/profile">
                             Profile
@@ -142,9 +138,6 @@ export default function Home() {
                         <section className="section">
                             <h3>Quick Navigation</h3>
                             <div className="actions-row">
-                                <Link className="btn btn-secondary" to="/dashboard">
-                                    Open Dashboard
-                                </Link>
                                 <Link className="btn btn-secondary" to="/profile">
                                     View Profile
                                 </Link>
