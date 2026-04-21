@@ -3,6 +3,7 @@ package com.smartcampus.smart_campus.security;
 import com.smartcampus.smart_campus.utils.JwtUtils;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +14,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
+import org.springframework.web.util.WebUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -58,8 +60,8 @@ public class JWTAuthFilter extends OncePerRequestFilter {
             return header.substring(7);
         }
 
-        String cookieToken = jwtUtils.getTokenFromCookie(request, Token.ACCESS);
-
+        Cookie cookie = WebUtils.getCookie(request, "ACCESS");
+        String cookieToken = cookie != null ? cookie.getValue() : null;
         return (cookieToken != null && !cookieToken.isBlank()) ? cookieToken : null;
     }
 
