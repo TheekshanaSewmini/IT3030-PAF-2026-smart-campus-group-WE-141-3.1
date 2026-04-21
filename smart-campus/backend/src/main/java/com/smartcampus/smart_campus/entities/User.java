@@ -1,6 +1,9 @@
 package com.smartcampus.smart_campus.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.smartcampus.smart_campus.enums.Role;
+import com.smartcampus.smart_campus.enums.Semester;
+import com.smartcampus.smart_campus.enums.Year;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import lombok.*;
