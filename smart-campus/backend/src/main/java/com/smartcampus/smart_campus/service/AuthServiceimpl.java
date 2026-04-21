@@ -1,5 +1,6 @@
 package com.smartcampus.smart_campus.service;
 
+
 import com.smartcampus.smart_campus.dtos.AuthResponse;
 import com.smartcampus.smart_campus.dtos.UserDto;
 import com.smartcampus.smart_campus.entities.User;
@@ -8,20 +9,17 @@ import com.smartcampus.smart_campus.enums.Token;
 import com.smartcampus.smart_campus.records.LoginRequest;
 import com.smartcampus.smart_campus.records.MailBody;
 import com.smartcampus.smart_campus.repo.UserRepo;
+
 import com.smartcampus.smart_campus.utils.EmailUtils;
 import com.smartcampus.smart_campus.utils.JwtUtils;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.security.SecureRandom;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import jakarta.servlet.http.HttpServletResponse;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -33,12 +31,12 @@ public class AuthServiceimpl implements AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtUtils jwtUtils;
 
-    // ================= EMAIL VALIDATION =================
+    // Email validation
     private boolean isValidEmail(String email) {
         return email != null && email.matches("^IT\\d+@my\\.sliit\\.lk$");
     }
 
-    // ================= SIGN UP =================
+    // Sign up
     @Override
     public AuthResponse signUp(UserDto.RegisterRequest request) {
 
@@ -182,7 +180,7 @@ public class AuthServiceimpl implements AuthService {
                 .build();
     }
 
-    // ================= VERIFY OTP =================
+    // Verify OTP
     @Override
     public AuthResponse verifyCode(String email, String code) {
 
@@ -222,7 +220,7 @@ public class AuthServiceimpl implements AuthService {
                 .build();
     }
 
-    // ================= RESEND OTP =================
+    // Resend OTP
     @Override
     public AuthResponse resendOtp(String email) {
 

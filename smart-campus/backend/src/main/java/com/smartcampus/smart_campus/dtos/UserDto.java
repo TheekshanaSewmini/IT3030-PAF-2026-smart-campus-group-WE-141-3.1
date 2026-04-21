@@ -3,7 +3,10 @@ package com.smartcampus.smart_campus.dtos;
 import com.smartcampus.smart_campus.enums.Role;
 import com.smartcampus.smart_campus.enums.Semester;
 import com.smartcampus.smart_campus.enums.Year;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 public class UserDto {
 

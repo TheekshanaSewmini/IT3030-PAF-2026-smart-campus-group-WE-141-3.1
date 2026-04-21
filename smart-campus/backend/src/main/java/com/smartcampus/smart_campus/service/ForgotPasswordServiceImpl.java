@@ -18,11 +18,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.security.SecureRandom;
-import java.util.Date;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Random;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -34,7 +30,7 @@ public class ForgotPasswordServiceImpl implements ForgotPasswordService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
 
-    // ================= SEND OTP =================
+    // Send OTP
     @Override
     public ResponseEntity<String> sendOtp(Map<String, String> request, HttpServletResponse response) {
 
@@ -66,7 +62,7 @@ public class ForgotPasswordServiceImpl implements ForgotPasswordService {
         return ResponseEntity.ok("OTP sent successfully");
     }
 
-    // ================= RESEND OTP =================
+    // Resend OTP
     @Override
     public ResponseEntity<String> resendOtp(HttpServletRequest request, HttpServletResponse response) {
 
@@ -99,7 +95,7 @@ public class ForgotPasswordServiceImpl implements ForgotPasswordService {
         return ResponseEntity.ok("OTP resent (" + fp.getResendCount() + "/3)");
     }
 
-    // ================= VERIFY OTP =================
+    // Verify OTP
     @Override
     public ResponseEntity<String> verifyOtp(
             Map<String, String> request,
@@ -128,7 +124,7 @@ public class ForgotPasswordServiceImpl implements ForgotPasswordService {
         return ResponseEntity.ok("OTP verified successfully");
     }
 
-    // ================= CHANGE PASSWORD =================
+    // Change password
     @Override
     public ResponseEntity<String> changePassword(
             HttpServletRequest request,
@@ -159,7 +155,7 @@ public class ForgotPasswordServiceImpl implements ForgotPasswordService {
         return ResponseEntity.ok("Password changed successfully");
     }
 
-    // ================= HELPERS =================
+    // Helpers
 
     private int generateOtp() {
         return new Random().nextInt(900000) + 100000;

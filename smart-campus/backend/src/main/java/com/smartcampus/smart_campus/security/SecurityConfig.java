@@ -14,7 +14,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsUtils;
 
-import java.util.Arrays;
 import java.util.List;
 
 @Configuration
@@ -23,40 +22,45 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private  final JWTAuthFilter jwtAuthFilter;
-    private  final AuthenticationProvider authenticationProvider;
+    private final JWTAuthFilter jwtAuthFilter;
+    private final AuthenticationProvider authenticationProvider;
 
-    // Security filter chain
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         http
-                .cors(cors -> cors.configurationSource(request -> {
-                    CorsConfiguration crf = new CorsConfiguration();
-                    crf.setAllowedOriginPatterns(List.of("http://localhost:*", "http://127.0.0.1:*"));
-                    crf.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS","PATCH"));
-                    crf.setAllowedHeaders(List.of("*"));
-                    crf.setAllowCredentials(true);
-                    crf.setMaxAge(3600L);
-                    return crf;
-                }))
-                .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(CorsUtils::isPreFlightRequest).permitAll()
-                        .requestMatchers(
-                                "/auth/**",
-                                "/forgotpass/**"
-                        ).permitAll()
-                        .anyRequest().authenticated()
-                )
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                )
-                .authenticationProvider(authenticationProvider)
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+            .cors(cors -> cors.configurationSource(request -> {
+                CorsConfiguration crf = new CorsConfiguration();
+                crf.setAllowedOriginPatterns(List.of("http://localhost:*"));
+                crf.setAllowedMethods(List.of("GET","POST","PUT","DELETE","PATCH","OPTIONS"));
+                crf.setAllowedHeaders(List.of("*"));
+                crf.setAllowCredentials(true);
+                return crf;
+            }))
+            .csrf(AbstractHttpConfigurer::disable)
+
+            .authorizeHttpRequests(auth -> auth
+                    // Allow preflight requests
+                    .requestMatchers(request -> CorsUtils.isPreFlightRequest(request)).permitAll()
+
+                    .requestMatchers("/auth/me", "/auth/logout").authenticated()
+                    .requestMatchers(
+                            "/auth/**",
+                            "/forgotpass/**",
+                            "/login/**"
+                    ).permitAll()
+
+                    .anyRequest().authenticated()
+            )
+
+            .sessionManagement(session ->
+                    session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            )
+
+            .authenticationProvider(authenticationProvider)
+
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
-
 }
-

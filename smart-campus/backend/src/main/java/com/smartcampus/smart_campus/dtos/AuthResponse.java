@@ -3,6 +3,9 @@ package com.smartcampus.smart_campus.dtos;
 import com.smartcampus.smart_campus.enums.Role;
 import com.smartcampus.smart_campus.enums.Semester;
 import com.smartcampus.smart_campus.enums.Year;
+import jakarta.persistence.Column;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -30,3 +33,4 @@ public final class AuthResponse {
     private String message;
     private String token;
 }
+

@@ -25,7 +25,7 @@ public class UserController {
     private final UserProfileService userProfileService;
     private final UserRepo userRepo;
 
-    // ================= UPDATE NAME =================
+    // Update name
     @PutMapping("/update-name")
     public ResponseEntity<String> updateName(
             @AuthenticationPrincipal User loggedUser,
@@ -35,7 +35,7 @@ public class UserController {
         return ResponseEntity.ok("Name updated successfully");
     }
 
-    // ================= UPDATE EMAIL =================
+    // Update email
     @PutMapping("/update-email")
     public ResponseEntity<String> updateEmail(
             @AuthenticationPrincipal User loggedUser,
@@ -45,7 +45,7 @@ public class UserController {
         return ResponseEntity.ok("OTP sent to new email for verification");
     }
 
-    // ================= VERIFY NEW EMAIL =================
+    // Verify new email
     @PostMapping("/verify-new-email")
     public ResponseEntity<String> verifyNewEmail(
             @AuthenticationPrincipal User loggedUser,
@@ -55,7 +55,7 @@ public class UserController {
         return ResponseEntity.ok("Email updated successfully");
     }
 
-    // ================= UPDATE PASSWORD =================
+    // Update password
     @PutMapping("/update-password")
     public ResponseEntity<String> updatePassword(
             @AuthenticationPrincipal User loggedUser,
@@ -65,7 +65,7 @@ public class UserController {
         return ResponseEntity.ok("Password updated successfully");
     }
 
-    // ================= GET PROFILE =================
+    // Get profile
     @GetMapping("/me")
     public ResponseEntity<UserDto.UserProfileDto> getProfile(
             @AuthenticationPrincipal User loggedUser) {
@@ -75,7 +75,7 @@ public class UserController {
         );
     }
 
-    // ================= HOME =================
+    // Home
     @PreAuthorize("hasRole('USER')")
     @GetMapping("/home")
     public ResponseEntity<UserDto.UserHomeDto> getHome(
@@ -86,7 +86,7 @@ public class UserController {
         );
     }
 
-    // ================= DELETE ACCOUNT =================
+    // Delete account
     @DeleteMapping("/delete")
     public ResponseEntity<String> deleteAccount(
             @AuthenticationPrincipal User loggedUser,
@@ -96,7 +96,7 @@ public class UserController {
         return ResponseEntity.ok("Account deleted successfully");
     }
 
-    // ================= REQUEST DELETE OTP =================
+    // Request delete OTP
     @PostMapping("/delete-forgot-request")
     public ResponseEntity<String> deleteForgotRequest(
             @AuthenticationPrincipal User loggedUser) {
@@ -105,7 +105,7 @@ public class UserController {
         return ResponseEntity.ok("OTP sent to email");
     }
 
-    // ================= VERIFY DELETE OTP =================
+    // Verify delete OTP
     @PostMapping("/delete-forgot-verify")
     public ResponseEntity<String> deleteForgotVerify(
             @AuthenticationPrincipal User loggedUser,
@@ -115,7 +115,7 @@ public class UserController {
         return ResponseEntity.ok("Account deleted successfully");
     }
 
-    // ================= PROFILE IMAGE UPLOAD =================
+    // Upload profile image
     @PostMapping("/upload-profile-image")
     public ResponseEntity<String> uploadProfileImage(
             @AuthenticationPrincipal User user,
@@ -139,7 +139,7 @@ public class UserController {
         return ResponseEntity.ok(user.getImageUrl());
     }
 
-    // ================= COVER IMAGE UPLOAD =================
+    // Upload cover image
     @PostMapping("/upload-cover-image")
     public ResponseEntity<String> uploadCoverImage(
             @AuthenticationPrincipal User user,
@@ -172,7 +172,7 @@ public class UserController {
 
     @GetMapping("Admin/dashboard")
     public ResponseEntity<UserDto.UserHomeDto> getAdminHome(@AuthenticationPrincipal User loggedUser) {
-        // loggedUser is automatically injected by Spring Security
+        // User is injected by Spring Security
         return ResponseEntity.ok(userProfileService.getUserHome(loggedUser.getUserId()));
     }
 

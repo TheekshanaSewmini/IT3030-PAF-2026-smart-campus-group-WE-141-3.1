@@ -4,9 +4,7 @@ import com.smartcampus.smart_campus.records.MailBody;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
 
@@ -20,6 +18,7 @@ public class EmailUtils {
         this.javaMailSender = javaMailSender;
     }
 
+    // Send HTML email using configured mail sender
     public void sendMail(MailBody mailBody) {
         try {
             MimeMessage message = javaMailSender.createMimeMessage();
@@ -39,4 +38,3 @@ public class EmailUtils {
         }
     }
 }
-

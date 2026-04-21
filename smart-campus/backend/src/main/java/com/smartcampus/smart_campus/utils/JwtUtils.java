@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class JwtUtils {
 
-    @Value("${spring.jwt.secret:ql0E2C9sTHEQ8Kxxggce+GP88iITTgj19aF1YW8E09Jk/zlz+0AqUD1rbfC6N3U2TrdeEI2y/CgwLYWghtpWZw==")
+    @Value("${spring.jwt.secret:Y2hhbGxlbmdlVG9Xcml0ZUZ1bGxQcmVkaWN0YWJsZVNlY3JldEtleQ==}")
     private String secretKey;
 
     @Value("${spring.cookie.secure:false}")
@@ -33,10 +33,12 @@ public class JwtUtils {
     @Value("${spring.cookie.same-site:Lax}")
     private String cookieSameSite;
 
+    // Token expiry times
     private static final long ACCESS_EXPIRATION_MS = 60 * 60 * 1000;
     private static final long REFRESH_EXPIRATION_MS = 7 * 24 * 60 * 60 * 1000L;
     private static final long VERIFY_EXPIRATION_MS = 30 * 60 * 1000;
 
+    // Create JWT and set it as HttpOnly cookie
     public String generateToken(
             Map<String, Object> extraClaims,
             UserDetails userDetails,
@@ -72,6 +74,7 @@ public class JwtUtils {
         return token;
     }
 
+    // Add token cookie in response header
     private void addCookie(HttpServletResponse response, Token type, String token, long expiryMs) {
         response.addHeader(
                 HttpHeaders.SET_COOKIE,
@@ -83,6 +86,7 @@ public class JwtUtils {
         Cookie cookie = WebUtils.getCookie(request, type.name());
         return cookie != null ? cookie.getValue() : null;
     }
+    // Remove token cookie by setting max-age to 0
     public void removeToken(HttpServletResponse response, Token tokenType) {
         response.addHeader(
                 HttpHeaders.SET_COOKIE,
@@ -131,6 +135,7 @@ public class JwtUtils {
                 .build();
     }
 
+    // SameSite=None requires secure cookies
     private String resolveSameSite() {
         if (cookieSameSite == null || cookieSameSite.isBlank()) {
             return "Lax";

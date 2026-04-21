@@ -1,6 +1,5 @@
 package com.smartcampus.smart_campus.security;
 
-
 import com.smartcampus.smart_campus.repo.UserRepo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -43,4 +42,5 @@ public class AuthConfig {
         return new BCryptPasswordEncoder();
     }
 }
+
 

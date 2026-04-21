@@ -3,7 +3,6 @@ package com.smartcampus.smart_campus.service;
 import com.smartcampus.smart_campus.records.MailBody;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.stereotype.Service;
 
 @Service

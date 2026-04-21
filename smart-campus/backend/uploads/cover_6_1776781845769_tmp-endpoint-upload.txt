@@ -1,0 +1,1 @@
+endpoint smoke upload file

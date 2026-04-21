@@ -24,14 +24,14 @@ public class UserProfileServiceImpl implements UserProfileService {
     private final ForgotPasswordRepository forgotPasswordRepository;
     private final EmailUtils emailUtils;
 
-    // ================= CURRENT USER =================
+    // Current user
     @Override
     public User getCurrentUser(String email) {
         return userRepo.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
-    // ================= DELETE ACCOUNT =================
+    // Delete account
     @Transactional
     @Override
     public void deleteAccount(User user, UserDto.DeleteAccountDto dto) {
@@ -43,7 +43,7 @@ public class UserProfileServiceImpl implements UserProfileService {
         userRepo.delete(user);
     }
 
-    // ================= REQUEST DELETE OTP =================
+    // Request delete OTP
     @Transactional
     @Override
     public void requestDeletion(User user) {
@@ -68,7 +68,7 @@ public class UserProfileServiceImpl implements UserProfileService {
         ));
     }
 
-    // ================= VERIFY + DELETE =================
+    // Verify and delete
     @Transactional
     @Override
     public void verifyAndDelete(User user, UserDto.DeleteAccountForgotVerifyDto dto) {
@@ -88,7 +88,7 @@ public class UserProfileServiceImpl implements UserProfileService {
         forgotPasswordRepository.delete(fp);
     }
 
-    // ================= UPDATE NAME =================
+    // Update name
     @Transactional
     @Override
     public UserDto.UpdateNameDto updateName(User user, UserDto.UpdateNameDto dto) {
@@ -104,7 +104,7 @@ public class UserProfileServiceImpl implements UserProfileService {
         );
     }
 
-    // ================= UPDATE EMAIL =================
+    // Update email
     @Transactional
     @Override
     public UserDto.UpdateEmailDto updateEmail(User user, UserDto.UpdateEmailDto dto) {
@@ -133,7 +133,7 @@ public class UserProfileServiceImpl implements UserProfileService {
         return new UserDto.UpdateEmailDto(newEmail);
     }
 
-    // ================= VERIFY NEW EMAIL =================
+    // Verify new email
     @Transactional
     @Override
     public void verifyNewEmail(User user, String otp) {
@@ -158,7 +158,7 @@ public class UserProfileServiceImpl implements UserProfileService {
         userRepo.save(user);
     }
 
-    // ================= UPDATE PASSWORD =================
+    // Update password
     @Transactional
     @Override
     public void updatePassword(User user, UserDto.UpdatePasswordDto dto) {
@@ -175,7 +175,7 @@ public class UserProfileServiceImpl implements UserProfileService {
         userRepo.save(user);
     }
 
-    // ================= HOME =================
+    // Home
     @Override
     public UserDto.UserHomeDto getUserHome(Long userId) {
 
@@ -189,7 +189,7 @@ public class UserProfileServiceImpl implements UserProfileService {
         );
     }
 
-    // ================= PROFILE (FIXED - NO INTEREST) =================
+    // Profile
     @Override
     public UserDto.UserProfileDto getProfile(Long userId) {
 

@@ -1,10 +1,9 @@
 package com.smartcampus.smart_campus.security;
 
-import com.smartcampus.smart_campus.utils.JwtUtils;
 import com.smartcampus.smart_campus.enums.Token;
+import com.smartcampus.smart_campus.utils.JwtUtils;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +14,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
-import org.springframework.web.util.WebUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -36,6 +34,8 @@ public class JWTAuthFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
+        String path = request.getServletPath();
+
         if (SecurityContextHolder.getContext().getAuthentication() != null) {
             filterChain.doFilter(request, response);
             return;
@@ -54,7 +54,6 @@ public class JWTAuthFilter extends OncePerRequestFilter {
     }
 
     private String resolveToken(HttpServletRequest request) {
-
         String header = request.getHeader("Authorization");
 
         if (header != null && header.startsWith("Bearer ")) {
@@ -62,32 +61,18 @@ public class JWTAuthFilter extends OncePerRequestFilter {
         }
 
         String cookieToken = jwtUtils.getTokenFromCookie(request, Token.ACCESS);
-
         return (cookieToken != null && !cookieToken.isBlank()) ? cookieToken : null;
     }
 
     private void authenticate(String token, HttpServletRequest request) {
 
-        String username;
-
         try {
-            username = jwtUtils.extractUsername(token);
-        } catch (Exception e) {
-            log.warn("Invalid JWT token: {}", e.getMessage());
-            return;
-        }
+            String username = jwtUtils.extractUsername(token);
+            if (username == null) return;
 
-        if (username == null) {
-            return;
-        }
-
-        try {
             UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
-            if (!jwtUtils.validateToken(token, userDetails)) {
-                log.warn("JWT validation failed for user: {}", username);
-                return;
-            }
+            if (!jwtUtils.validateToken(token, userDetails)) return;
 
             UsernamePasswordAuthenticationToken authToken =
                     new UsernamePasswordAuthenticationToken(
@@ -102,10 +87,8 @@ public class JWTAuthFilter extends OncePerRequestFilter {
 
             SecurityContextHolder.getContext().setAuthentication(authToken);
 
-            log.debug("Authenticated user: {}", username);
-
         } catch (Exception e) {
-            log.warn("Authentication error for user: {}", username);
+            log.warn("JWT error: {}", e.getMessage());
         }
     }
 }

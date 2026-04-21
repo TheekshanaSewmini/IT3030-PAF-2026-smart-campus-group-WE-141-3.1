@@ -17,4 +17,3 @@ public interface ForgotPasswordService {
 
     ResponseEntity<String> changePassword(HttpServletRequest request, HttpServletResponse response, UserDto.ChangePassword dto);
 }
-

@@ -1,7 +1,7 @@
 package com.smartcampus.smart_campus.entities;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.smartcampus.smart_campus.enums.RecoveryChannel;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -42,3 +42,4 @@ public class ForgotPassword {
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
 }
+
