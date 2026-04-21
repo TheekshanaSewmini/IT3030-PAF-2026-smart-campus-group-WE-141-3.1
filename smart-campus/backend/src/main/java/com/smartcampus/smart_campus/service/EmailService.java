@@ -2,6 +2,7 @@ package com.smartcampus.smart_campus.service;
 
 import com.smartcampus.smart_campus.records.MailBody;
 import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.stereotype.Service;
 
@@ -9,10 +10,10 @@ import org.springframework.stereotype.Service;
 public class EmailService{
 
 
-    private final JavaMailSenderImpl javaMailSender;
+    private final JavaMailSender javaMailSender;
 
 
-    public EmailService(JavaMailSenderImpl javaMailSender) {
+    public EmailService(JavaMailSender javaMailSender) {
         this.javaMailSender = javaMailSender;
     }
 

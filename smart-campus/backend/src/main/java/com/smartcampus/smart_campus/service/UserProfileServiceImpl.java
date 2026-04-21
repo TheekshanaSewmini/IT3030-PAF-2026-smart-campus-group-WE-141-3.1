@@ -3,6 +3,7 @@ package com.smartcampus.smart_campus.service;
 import com.smartcampus.smart_campus.dtos.UserDto;
 import com.smartcampus.smart_campus.entities.ForgotPassword;
 import com.smartcampus.smart_campus.entities.User;
+import com.smartcampus.smart_campus.records.MailBody;
 import com.smartcampus.smart_campus.repo.ForgotPasswordRepository;
 import com.smartcampus.smart_campus.repo.UserRepo;
 import com.smartcampus.smart_campus.utils.EmailUtils;

@@ -30,4 +30,3 @@ public final class AuthResponse {
     private String message;
     private String token;
 }
-

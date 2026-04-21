@@ -15,4 +15,3 @@ public interface AuthService {
 
     AuthResponse resendOtp(String email);
 }
-

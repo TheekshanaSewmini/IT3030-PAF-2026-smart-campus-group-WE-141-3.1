@@ -125,4 +125,3 @@ public class User implements UserDetails {
         return isVerified;
     }
 }
-

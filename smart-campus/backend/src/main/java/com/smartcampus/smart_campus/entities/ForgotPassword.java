@@ -42,4 +42,3 @@ public class ForgotPassword {
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
 }
-

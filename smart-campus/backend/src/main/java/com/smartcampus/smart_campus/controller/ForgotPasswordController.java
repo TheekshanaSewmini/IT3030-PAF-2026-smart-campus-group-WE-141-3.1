@@ -1,5 +1,6 @@
 package com.smartcampus.smart_campus.controller;
 
+import com.smartcampus.smart_campus.dtos.UserDto;
 import com.smartcampus.smart_campus.service.ForgotPasswordService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -43,4 +44,5 @@ public class ForgotPasswordController {
         return forgotPasswordService.changePassword(request, response, dto);
     }
 }
+
 

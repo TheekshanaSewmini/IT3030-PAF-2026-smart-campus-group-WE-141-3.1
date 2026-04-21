@@ -1,6 +1,7 @@
 package com.smartcampus.smart_campus.security;
 
 import com.smartcampus.smart_campus.utils.JwtUtils;
+import com.smartcampus.smart_campus.enums.Token;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -60,8 +61,8 @@ public class JWTAuthFilter extends OncePerRequestFilter {
             return header.substring(7);
         }
 
-        Cookie cookie = WebUtils.getCookie(request, "ACCESS");
-        String cookieToken = cookie != null ? cookie.getValue() : null;
+        String cookieToken = jwtUtils.getTokenFromCookie(request, Token.ACCESS);
+
         return (cookieToken != null && !cookieToken.isBlank()) ? cookieToken : null;
     }
 

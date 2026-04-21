@@ -30,4 +30,3 @@ public interface UserProfileService {
 
     void verifyAndDelete(User user, UserDto.DeleteAccountForgotVerifyDto dto);
 }
-

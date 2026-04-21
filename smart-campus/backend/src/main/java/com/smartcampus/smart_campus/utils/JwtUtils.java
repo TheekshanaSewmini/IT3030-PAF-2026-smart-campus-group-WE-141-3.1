@@ -1,6 +1,9 @@
 package com.smartcampus.smart_campus.utils;
 
 import com.smartcampus.smart_campus.enums.Token;
+import io.jsonwebtoken.*;
+import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -14,16 +17,14 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.util.WebUtils;
 
 import java.security.Key;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Component
 @Slf4j
 public class JwtUtils {
 
-    @Value("${spring.jwt.secret:Y2hhbGxlbmdlVG9Xcml0ZUZ1bGxQcmVkaWN0YWJsZVNlY3JldEtleQ==}")
+    @Value("${spring.jwt.secret:ql0E2C9sTHEQ8Kxxggce+GP88iITTgj19aF1YW8E09Jk/zlz+0AqUD1rbfC6N3U2TrdeEI2y/CgwLYWghtpWZw==")
     private String secretKey;
 
     @Value("${spring.cookie.secure:false}")
@@ -148,4 +149,3 @@ public class JwtUtils {
         };
     }
 }
-

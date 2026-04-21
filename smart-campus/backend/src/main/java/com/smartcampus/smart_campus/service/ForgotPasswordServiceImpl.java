@@ -18,6 +18,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.security.SecureRandom;
 import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
@@ -183,4 +184,3 @@ public class ForgotPasswordServiceImpl implements ForgotPasswordService {
         return null;
     }
 }
-
