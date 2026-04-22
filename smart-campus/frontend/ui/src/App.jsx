@@ -8,6 +8,7 @@ import Dashboard from "./pages/user/Dashboard.jsx";
 import TechHome from "./pages/user/TechHome.jsx";
 import Profile from "./pages/user/Profile.jsx";
 import Settings from "./pages/user/Settings.jsx";
+import AdminResources from "./pages/user/AdminResources.jsx";
 
 export default function App() {
     return (
@@ -21,6 +22,7 @@ export default function App() {
 
                 <Route path="/home" element={<Home />} />
                 <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/admin/resources" element={<AdminResources />} />
                 <Route path="/tech-home" element={<TechHome />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/settings" element={<Settings />} />
