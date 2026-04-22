@@ -1199,3 +1199,72 @@ select:focus {
         max-width: 100%;
     }
 }
+
+/* Booking Module Styles */
+.booking-form {
+    display: grid;
+    gap: 0.9rem;
+}
+
+.booking-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.8rem;
+}
+
+.booking-actions {
+    margin-top: 0.2rem;
+}
+
+.booking-availability {
+    display: grid;
+    gap: 0.8rem;
+    padding: 0.9rem;
+    border-radius: 12px;
+    border: 1px solid var(--line-soft);
+    background: rgba(236, 246, 255, 0.48);
+}
+
+.booking-list {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.booking-card {
+    border: 1px solid var(--line-soft);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.78);
+    padding: 0.9rem;
+}
+
+.booking-card__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.8rem;
+    margin-bottom: 0.4rem;
+}
+
+.booking-card__head h4 {
+    margin: 0;
+}
+
+.booking-status.pending {
+    color: #9a6700;
+    background: rgba(251, 191, 36, 0.16);
+}
+
+.booking-status.approved {
+    color: #0f7f38;
+    background: rgba(21, 128, 61, 0.16);
+}
+
+.booking-status.rejected {
+    color: #a61c28;
+    background: rgba(207, 46, 58, 0.16);
+}
+
+.booking-status.cancelled {
+    color: #475569;
+    background: rgba(148, 163, 184, 0.24);
+}

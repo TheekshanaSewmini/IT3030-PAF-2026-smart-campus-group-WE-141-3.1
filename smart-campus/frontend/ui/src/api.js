@@ -35,8 +35,11 @@ api.interceptors.response.use(
             requestUrl.includes("/auth/verify-code") ||
             requestUrl.includes("/auth/resend-otp");
 
+        const responseStatus = error.response?.status;
+        const shouldTryRefresh = responseStatus === 401 || responseStatus === 403;
+
         if (
-            error.response?.status === 401 &&
+            shouldTryRefresh &&
             !originalRequest?._retry &&
             !isRefreshRequest &&
             !isAuthBootstrapRequest
@@ -83,6 +86,21 @@ export const resourceApi = {
         params: { status },
     }),
     delete: (id) => api.delete(`/facilities/${id}`),
+};
+
+// Booking endpoints
+export const bookingApi = {
+    create: (payload) => api.post("/booking/create", payload),
+    update: (bookingId, payload) => api.put(`/booking/${bookingId}`, payload),
+    cancel: (bookingId) => api.delete(`/booking/${bookingId}`),
+    getMy: () => api.get("/booking/my"),
+    getAll: () => api.get("/booking/all"),
+    getPending: () => api.get("/booking/pending"),
+    approve: (bookingId) => api.patch(`/booking/${bookingId}/approve`),
+    reject: (bookingId) => api.patch(`/booking/${bookingId}/reject`),
+    getAvailableResources: (params) => api.get("/booking/available-resources", { params }),
+    getResourceAvailability: (facilityAssetId, params) =>
+        api.get(`/booking/resources/${facilityAssetId}/availability`, { params }),
 };
 
 export default api;
