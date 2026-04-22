@@ -10,6 +10,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 @RestController
@@ -56,6 +58,29 @@ public class BookingController {
     @GetMapping("/all")
     public ResponseEntity<List<BookingDto.BookingResponse>> getAllBookings() {
         return ResponseEntity.ok(bookingService.getAllBookings());
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/pending")
+    public ResponseEntity<List<BookingDto.BookingResponse>> getPendingBookings() {
+        return ResponseEntity.ok(bookingService.getPendingBookings());
+    }
+
+    @GetMapping("/available-resources")
+    public ResponseEntity<List<BookingDto.AvailableResourceResponse>> getAvailableResources(
+            @RequestParam LocalDate bookingDate,
+            @RequestParam LocalTime startTime,
+            @RequestParam LocalTime endTime
+    ) {
+        return ResponseEntity.ok(bookingService.getAvailableResources(bookingDate, startTime, endTime));
+    }
+
+    @GetMapping("/resources/{facilityAssetId}/availability")
+    public ResponseEntity<BookingDto.ResourceAvailabilityResponse> getResourceAvailability(
+            @PathVariable Long facilityAssetId,
+            @RequestParam LocalDate bookingDate
+    ) {
+        return ResponseEntity.ok(bookingService.getResourceAvailability(facilityAssetId, bookingDate));
     }
 
     @PreAuthorize("hasRole('ADMIN')")
