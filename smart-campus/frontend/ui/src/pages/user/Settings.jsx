@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import api from "../../api";
-import { normalizeRole, roleHomePath } from "../../utils/roleHome";
+import { normalizeRole } from "../../utils/roleHome";
+import AppNavbar from "../../components/AppNavbar";
 
 function buildAssetUrl(path) {
     if (!path) {
@@ -312,29 +313,21 @@ export default function Settings() {
         );
     }
 
-    const homePath = roleHomePath(user.role);
-
     return (
         <div className="page-shell">
             <div className="bg-layer bg-user" />
             <div className="panel page-panel">
-                <header className="top-nav">
-                    <div>
-                        <h1 className="brand">Settings</h1>
-                        <p className="subtitle">Manage profile, credentials, and account security.</p>
-                    </div>
-                    <div className="nav-group">
-                        <Link className="nav-link" to={homePath}>
-                            Home
-                        </Link>
-                        <Link className="nav-link" to="/profile">
-                            Profile
-                        </Link>
-                        <button className="btn btn-danger" type="button" onClick={handleLogout}>
-                            Logout
-                        </button>
-                    </div>
-                </header>
+                <AppNavbar
+                    title="Settings"
+                    subtitle="Manage profile, credentials, and account security."
+                    profile={{
+                        role: user.role,
+                        name: user.firstName,
+                        lastName: user.lastName,
+                        email: user.email,
+                    }}
+                    onLogout={handleLogout}
+                />
 
                 {notice.text && <p className={`message ${notice.type}`}>{notice.text}</p>}
 
