@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../../api";
 import { normalizeRole, roleHomePath } from "../../utils/roleHome";
+import AppNavbar from "../../components/AppNavbar";
 
 function getErrorMessage(error, fallback) {
     const payload = error?.response?.data;
@@ -33,8 +34,8 @@ export default function Home() {
 
                 setHomeData(homeResponse.data);
                 setProfileData(profileResponse.data);
-            } catch (userError) {
-                const status = userError.response?.status;
+            } catch (loadError) {
+                const status = loadError.response?.status;
                 if (status === 401) {
                     navigate("/login", { replace: true });
                     return;
@@ -57,7 +58,7 @@ export default function Home() {
                     }
                 }
 
-                setError(getErrorMessage(userError, "Failed to load home details."));
+                setError(getErrorMessage(loadError, "Failed to load home details."));
             }
         };
 
@@ -88,26 +89,12 @@ export default function Home() {
         <div className="page-shell">
             <div className="bg-layer bg-user" />
             <div className="panel page-panel">
-                <header className="top-nav">
-                    <div>
-                        <h1 className="brand">Home</h1>
-                        <p className="subtitle">{homeData?.welcomeMessage || "Welcome to Smart Campus."}</p>
-                    </div>
-                    <div className="nav-group">
-                        <Link className="nav-link" to="/home">
-                            Home
-                        </Link>
-                        <Link className="nav-link" to="/profile">
-                            Profile
-                        </Link>
-                        <Link className="nav-link" to="/settings">
-                            Settings
-                        </Link>
-                        <button className="btn btn-danger" type="button" onClick={handleLogout}>
-                            Logout
-                        </button>
-                    </div>
-                </header>
+                <AppNavbar
+                    title="Home"
+                    subtitle={homeData?.welcomeMessage || "Welcome to Smart Campus."}
+                    profile={profileData}
+                    onLogout={handleLogout}
+                />
 
                 {error && <p className="message error">{error}</p>}
 
@@ -138,6 +125,12 @@ export default function Home() {
                         <section className="section">
                             <h3>Quick Navigation</h3>
                             <div className="actions-row">
+                                <Link className="btn btn-secondary" to="/resources">
+                                    Resources
+                                </Link>
+                                <Link className="btn btn-secondary" to="/booking">
+                                    Booking
+                                </Link>
                                 <Link className="btn btn-secondary" to="/profile">
                                     View Profile
                                 </Link>

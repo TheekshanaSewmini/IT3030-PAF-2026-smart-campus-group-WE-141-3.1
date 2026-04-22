@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../../api";
 import { normalizeRole, roleHomePath } from "../../utils/roleHome";
+import AppNavbar from "../../components/AppNavbar";
 
 function getErrorMessage(error, fallback) {
     const payload = error?.response?.data;
@@ -89,26 +90,12 @@ export default function TechHome() {
         <div className="page-shell">
             <div className="bg-layer bg-user" />
             <div className="panel page-panel">
-                <header className="top-nav">
-                    <div>
-                        <h1 className="brand">Technician Home</h1>
-                        <p className="subtitle">{homeData?.welcomeMessage || "Technician operations overview."}</p>
-                    </div>
-                    <div className="nav-group">
-                        <Link className="nav-link" to="/tech-home">
-                            Home
-                        </Link>
-                        <Link className="nav-link" to="/profile">
-                            Profile
-                        </Link>
-                        <Link className="nav-link" to="/settings">
-                            Settings
-                        </Link>
-                        <button className="btn btn-danger" type="button" onClick={handleLogout}>
-                            Logout
-                        </button>
-                    </div>
-                </header>
+                <AppNavbar
+                    title="Technician Home"
+                    subtitle={homeData?.welcomeMessage || "Technician operations overview."}
+                    profile={profileData}
+                    onLogout={handleLogout}
+                />
 
                 {error && <p className="message error">{error}</p>}
 

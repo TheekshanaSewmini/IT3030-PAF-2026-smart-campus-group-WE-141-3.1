@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import api from "../../api";
-import { normalizeRole, roleHomePath } from "../../utils/roleHome";
+import { normalizeRole } from "../../utils/roleHome";
+import AppNavbar from "../../components/AppNavbar";
 
 function buildAssetUrl(path) {
     if (!path) {
@@ -65,7 +66,6 @@ export default function Profile() {
     const profileImage = buildAssetUrl(profile?.profileImageUrl);
     const coverImage = buildAssetUrl(profile?.coverImageUrl);
     const roleLabel = normalizeRole(profile?.role) || "USER";
-    const homePath = roleHomePath(profile?.role);
     const initials = (profile?.name?.[0] || "U").toUpperCase();
     const fullName = `${profile?.name || ""} ${profile?.lastName || ""}`.trim();
 
@@ -73,20 +73,12 @@ export default function Profile() {
         <div className="page-shell">
             <div className="bg-layer bg-user" />
             <div className="panel page-panel">
-                <header className="top-nav">
-                    <div>
-                        <h1 className="brand">Profile</h1>
-                        <p className="subtitle">Your account details from backend profile APIs.</p>
-                    </div>
-
-                    <div className="nav-group">
-                        <Link className="nav-link" to={homePath}>Home</Link>
-                        <Link className="nav-link" to="/settings">Settings</Link>
-                        <button className="btn btn-danger" type="button" onClick={handleLogout}>
-                            Logout
-                        </button>
-                    </div>
-                </header>
+                <AppNavbar
+                    title="Profile"
+                    subtitle="Your account details from backend profile APIs."
+                    profile={profile}
+                    onLogout={handleLogout}
+                />
 
                 {error && <p className="message error">{error}</p>}
 

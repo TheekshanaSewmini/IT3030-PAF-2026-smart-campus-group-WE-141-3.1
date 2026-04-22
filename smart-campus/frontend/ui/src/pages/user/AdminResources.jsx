@@ -221,7 +221,8 @@ export default function AdminResources() {
 
                     <div className="nav-group">
                         <Link className="nav-link" to="/dashboard">Dashboard</Link>
-                        <Link className="nav-link" to="/admin/resources">Resources</Link>
+                        <Link className="nav-link" to="/resources">Browse Resources</Link>
+                        <Link className="nav-link" to="/admin/resources">Manage Resources</Link>
                         <Link className="nav-link" to="/profile">Profile</Link>
                         <button className="btn btn-danger" type="button" onClick={handleLogout}>
                             Logout
