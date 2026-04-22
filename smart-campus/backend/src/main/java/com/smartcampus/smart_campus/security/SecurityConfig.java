@@ -11,6 +11,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsUtils;
 
@@ -55,6 +56,14 @@ public class SecurityConfig {
 
             .sessionManagement(session ->
                     session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            )
+
+            .exceptionHandling(ex -> ex
+                    // Return 401 for missing/invalid authentication so frontend refresh flow can trigger.
+                    .authenticationEntryPoint((request, response, exception) ->
+                            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized"))
+                    .accessDeniedHandler((request, response, exception) ->
+                            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden"))
             )
 
             .authenticationProvider(authenticationProvider)
