@@ -65,6 +65,7 @@ public class FacilityAssetDto {
             FacilityAssetType type,
             Integer capacity,
             String location,
+            String imageUrl,
             LocalTime availableFrom,
             LocalTime availableTo,
             FacilityAssetStatus status

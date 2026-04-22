@@ -87,6 +87,7 @@ export default function Dashboard() {
 
                     <div className="nav-group">
                         <Link className="nav-link" to="/dashboard">Dashboard</Link>
+                        <Link className="nav-link" to="/admin/resources">Resources</Link>
                         <Link className="nav-link" to="/profile">Profile</Link>
                         <Link className="nav-link" to="/settings">Settings</Link>
                         <button className="btn btn-danger" type="button" onClick={handleLogout}>
@@ -117,6 +118,7 @@ export default function Dashboard() {
                         <section className="section">
                             <h3>Admin Quick Actions</h3>
                             <div className="actions-row">
+                                <Link className="btn btn-primary" to="/admin/resources">Add Resource</Link>
                                 <Link className="btn btn-secondary" to="/profile">Manage Profile</Link>
                                 <Link className="btn btn-secondary" to="/settings">User Settings</Link>
                             </div>

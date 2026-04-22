@@ -45,6 +45,9 @@ public class FacilityAsset {
     @Column(nullable = false, length = 200)
     private String location;
 
+    @Column(length = 400)
+    private String imageUrl;
+
     @Column(nullable = false)
     private LocalTime availableFrom;
 
