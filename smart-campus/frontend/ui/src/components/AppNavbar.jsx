@@ -1,5 +1,6 @@
 import { NavLink, Link } from "react-router-dom";
 import { normalizeRole, roleHomePath } from "../utils/roleHome";
+import { HiAcademicCap, HiLogout } from "react-icons/hi";
 
 function getUserDisplayName(profile) {
     const fullName = `${profile?.name || ""} ${profile?.lastName || ""}`.trim();
@@ -25,7 +26,9 @@ export default function AppNavbar({ title, subtitle, profile, onLogout }) {
         <header className="top-nav top-nav--glass professional-header">
             <div className="brand-section">
                 <Link to={homePath} className="brand-logo">
-                    <span className="logo-icon">🎓</span>
+                    <span className="logo-icon">
+                        <HiAcademicCap />
+                    </span>
                     <div>
                         <h1 className="brand-text">SmartCampus</h1>
                         <p className="subtitle-text">{title}</p>
@@ -65,7 +68,7 @@ export default function AppNavbar({ title, subtitle, profile, onLogout }) {
                         </div>
                     </NavLink>
                     <button className="logout-icon-btn" type="button" onClick={onLogout} title="Logout">
-                        Logout
+                        <HiLogout size={18} /> <span>Logout</span>
                     </button>
                 </div>
             </div>

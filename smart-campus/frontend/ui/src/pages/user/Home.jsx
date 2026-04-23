@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import api from "../../api";
 import { normalizeRole, roleHomePath } from "../../utils/roleHome";
 import AppNavbar from "../../components/AppNavbar";
+import { HiBell, HiCalendar, HiShieldCheck, HiOfficeBuilding, HiBookOpen, HiUser, HiCog, HiArrowRight } from "react-icons/hi";
 
 function getErrorMessage(error, fallback) {
     const payload = error?.response?.data;
@@ -112,7 +113,7 @@ export default function Home() {
                                     </p>
                                     <div className="hero-actions">
                                         <Link to="/booking" className="btn btn-primary hero-btn">
-                                            Manage Bookings <span>→</span>
+                                            Manage Bookings <HiArrowRight />
                                         </Link>
                                     </div>
                                 </div>
@@ -125,21 +126,21 @@ export default function Home() {
                             {/* Status Section */}
                             <div className="stats-row">
                                 <article className="stat-card glass-card">
-                                    <div className="stat-icon">🔔</div>
+                                    <div className="stat-icon stats-icon--blue"><HiBell /></div>
                                     <div className="stat-info">
                                         <h4 className="stat-label">Notifications</h4>
                                         <p className="stat-value">{homeData?.notifications ?? 0}</p>
                                     </div>
                                 </article>
                                 <article className="stat-card glass-card">
-                                    <div className="stat-icon">📅</div>
+                                    <div className="stat-icon stats-icon--purple"><HiCalendar /></div>
                                     <div className="stat-info">
                                         <h4 className="stat-label">Active Bookings</h4>
                                         <p className="stat-value">{homeData?.tasks ?? 0}</p>
                                     </div>
                                 </article>
                                 <article className="stat-card glass-card">
-                                    <div className="stat-icon">🛡️</div>
+                                    <div className="stat-icon stats-icon--green"><HiShieldCheck /></div>
                                     <div className="stat-info">
                                         <h4 className="stat-label">Account Role</h4>
                                         <p className="stat-value highlight-role">{roleLabel}</p>
@@ -155,28 +156,28 @@ export default function Home() {
                                 </div>
                                 <div className="quick-nav-grid">
                                     <Link to="/resources" className="nav-card">
-                                        <div className="nav-card-icon">🏗️</div>
+                                        <div className="nav-card-icon"><HiOfficeBuilding /></div>
                                         <div className="nav-card-body">
                                             <h4>Resources</h4>
                                             <p>Browse available campus facilities</p>
                                         </div>
                                     </Link>
                                     <Link to="/booking" className="nav-card">
-                                        <div className="nav-card-icon">📑</div>
+                                        <div className="nav-card-icon"><HiBookOpen /></div>
                                         <div className="nav-card-body">
                                             <h4>Booking</h4>
                                             <p>Check availability and reserve</p>
                                         </div>
                                     </Link>
                                     <Link to="/profile" className="nav-card">
-                                        <div className="nav-card-icon">👤</div>
+                                        <div className="nav-card-icon"><HiUser /></div>
                                         <div className="nav-card-body">
                                             <h4>My Profile</h4>
                                             <p>View and manage your account</p>
                                         </div>
                                     </Link>
                                     <Link to="/settings" className="nav-card">
-                                        <div className="nav-card-icon">⚙️</div>
+                                        <div className="nav-card-icon"><HiCog /></div>
                                         <div className="nav-card-body">
                                             <h4>Settings</h4>
                                             <p>Preferences and security</p>
