@@ -193,6 +193,12 @@ public class BookingServiceImpl implements BookingService {
                         ))
                         .toList();
 
+        List<BookingDto.TimeSlot> slots = calculateAvailableSlots(
+                facilityAsset,
+                bookedSlots,
+                bookingDate
+        );
+
         return new BookingDto.ResourceAvailabilityResponse(
                 facilityAsset.getId(),
                 facilityAsset.getName(),
@@ -200,8 +206,43 @@ public class BookingServiceImpl implements BookingService {
                 bookingDate,
                 facilityAsset.getAvailableFrom(),
                 facilityAsset.getAvailableTo(),
-                bookedSlots
+                slots
         );
+    }
+
+    private List<BookingDto.TimeSlot> calculateAvailableSlots(FacilityAsset asset, List<BookingDto.BookedSlotResponse> booked, LocalDate bookingDate) {
+        java.util.ArrayList<BookingDto.TimeSlot> allSlots = new java.util.ArrayList<>();
+        LocalTime current = asset.getAvailableFrom() != null ? asset.getAvailableFrom() : LocalTime.of(8, 0);
+        LocalTime to = asset.getAvailableTo() != null ? asset.getAvailableTo() : LocalTime.of(17, 0);
+        int duration = asset.getSlotDurationMinutes() != null ? asset.getSlotDurationMinutes() : 60;
+        if (duration <= 0) duration = 60; // Safety fallback
+
+        LocalTime now = LocalTime.now();
+        boolean isToday = bookingDate.isEqual(LocalDate.now());
+
+        while (current.plusMinutes(duration).isBefore(to) || current.plusMinutes(duration).equals(to)) {
+            LocalTime next = current.plusMinutes(duration);
+            
+            // Skip past slots for today
+            if (isToday && current.isBefore(now)) {
+                current = next;
+                continue;
+            }
+            final LocalTime start = current;
+            final LocalTime end = next;
+
+            boolean isOccupied = booked.stream().anyMatch(b -> 
+                (start.isBefore(b.endTime()) && end.isAfter(b.startTime())) ||
+                (start.equals(b.startTime()) || end.equals(b.endTime()))
+            );
+
+            if (!isOccupied) {
+                allSlots.add(new BookingDto.TimeSlot(start, end));
+            }
+            current = next;
+        }
+
+        return allSlots;
     }
 
     @Transactional

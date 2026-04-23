@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import api, { bookingApi, resourceApi } from "../../api";
 import AppNavbar from "../../components/AppNavbar";
-import { HiSearch, HiCheckCircle, HiXCircle, HiClock, HiCheck, HiX, HiTrash, HiClipboardList, HiShieldExclamation, HiBell, HiCalendar, HiPlus, HiAcademicCap } from "react-icons/hi";
+import { HiSearch, HiCheckCircle, HiXCircle, HiClock, HiCheck, HiX, HiTrash, HiClipboardList, HiShieldExclamation, HiBell, HiCalendar, HiPlus, HiAcademicCap, HiSparkles, HiLightningBolt } from "react-icons/hi";
 import { normalizeRole } from "../../utils/roleHome";
 
 function getErrorMessage(error, fallback) {
@@ -34,11 +34,13 @@ function safeFormatTime(timeText) {
 }
 
 function statusClass(status) {
-    return `status-badge booking-status ${(status || "").toLowerCase()}`;
+    const s = (status || "").toLowerCase();
+    return `status-pill status-${s}`;
 }
 
 export default function Booking() {
     const navigate = useNavigate();
+    const location = useLocation();
 
     // Data State
     const [profileData, setProfileData] = useState(null);
@@ -49,26 +51,30 @@ export default function Booking() {
     
     // UI State
     const [loading, setLoading] = useState(true);
-    const [isFormOpen, setIsFormOpen] = useState(false);
+    const [isFormOpen, setIsFormOpen] = useState(!!location.state?.resourceId);
     const [viewMode, setViewMode] = useState("PE");
     const [error, setError] = useState("");
     const [notice, setNotice] = useState({ type: "", text: "" });
 
     // New Booking Flow State
-    const [selectedResourceId, setSelectedResourceId] = useState("");
+    const [selectedResourceId, setSelectedResourceId] = useState(location.state?.resourceId || "");
     const [bookingDate, setBookingDate] = useState(new Date().toISOString().slice(0, 10));
     const [checkingAvailability, setCheckingAvailability] = useState(false);
     const [resourceAvailability, setResourceAvailability] = useState(null);
     const [selectedSlot, setSelectedSlot] = useState(null);
     const [bookingTitle, setBookingTitle] = useState("");
     const [submitting, setSubmitting] = useState(false);
+    
+    // Admin Override
+    const [useManualTime, setUseManualTime] = useState(false);
+    const [manualStartTime, setManualStartTime] = useState("09:00");
+    const [manualEndTime, setManualEndTime] = useState("10:00");
 
     const roleLabel = useMemo(() => normalizeRole(profileData?.role) || "USER", [profileData]);
     const isAdmin = roleLabel === "ADMIN";
 
     const loadData = async () => {
         try {
-            setLoading(true);
             const [p, m, r] = await Promise.all([
                 api.get("/user/me"), 
                 bookingApi.getMy(), 
@@ -76,17 +82,17 @@ export default function Booking() {
             ]);
             
             setProfileData(p.data);
-            setMyBookings(Array.isArray(m.data) ? m.data : []);
-            setResources(Array.isArray(r.data) ? r.data : []);
+            setMyBookings(m.data);
+            setResources(r.data);
 
             if (normalizeRole(p.data?.role) === "ADMIN") {
                 const [pn, al] = await Promise.all([bookingApi.getPending(), bookingApi.getAll()]);
-                setPendingBookings(Array.isArray(pn.data) ? pn.data : []);
-                setAllBookings(Array.isArray(al.data) ? al.data : []);
+                setPendingBookings(pn.data);
+                setAllBookings(al.data);
             }
         } catch (err) {
             if (err.response?.status === 401) navigate("/login");
-            else setError("Failed to connect to booking infrastructure.");
+            else setError("Infrastructure connection failed.");
         } finally {
             setLoading(false);
         }
@@ -94,40 +100,44 @@ export default function Booking() {
 
     useEffect(() => { loadData(); }, []);
 
-    // Availability Check Logic
-    const handleCheckAvailability = async () => {
-        if (!selectedResourceId || !bookingDate) {
-            setNotice({ type: "error", text: "Please select both resource and date." });
-            return;
-        }
-        try {
-            setCheckingAvailability(true);
-            const resp = await bookingApi.getResourceAvailability(selectedResourceId, { bookingDate });
-            setResourceAvailability(resp.data);
-            setSelectedSlot(null);
-        } catch (err) {
-            setNotice({ type: "error", text: "Availability check failed." });
-        } finally {
-            setCheckingAvailability(false);
-        }
-    };
+    useEffect(() => {
+        const autoCheck = async () => {
+            if (selectedResourceId && bookingDate) {
+                try {
+                    setCheckingAvailability(true);
+                    const resp = await bookingApi.getResourceAvailability(selectedResourceId, { bookingDate });
+                    setResourceAvailability(resp.data);
+                    setSelectedSlot(null);
+                } catch (err) {
+                    setError("Availability sync interrupted.");
+                } finally {
+                    setCheckingAvailability(false);
+                }
+            }
+        };
+        autoCheck();
+    }, [selectedResourceId, bookingDate]);
 
     const handleCreateBooking = async () => {
-        if (!selectedSlot || !bookingTitle) return;
+        const finalStartTime = useManualTime ? `${manualStartTime}:00` : selectedSlot?.startTime;
+        const finalEndTime = useManualTime ? `${manualEndTime}:00` : selectedSlot?.endTime;
+
+        if (!bookingTitle || (!useManualTime && !selectedSlot)) return;
+
         try {
             setSubmitting(true);
             await bookingApi.create({
                 facilityAssetId: Number(selectedResourceId),
                 title: bookingTitle,
                 bookingDate,
-                startTime: selectedSlot.startTime,
-                endTime: selectedSlot.endTime,
+                startTime: finalStartTime,
+                endTime: finalEndTime,
             });
-            setNotice({ type: "success", text: "Reservation queued successfully!" });
+            setNotice({ type: "success", text: "Transaction confirmed." });
             setIsFormOpen(false);
             loadData();
         } catch (err) {
-            setNotice({ type: "error", text: getErrorMessage(err, "Reservation failed.") });
+            setNotice({ type: "error", text: getErrorMessage(err, "Confirmation failed.") });
         } finally {
             setSubmitting(false);
         }
@@ -136,11 +146,17 @@ export default function Booking() {
     const handleAdminAction = async (id, action) => {
         try {
             if (action === "approve") await bookingApi.approve(id);
-            if (action === "reject") await bookingApi.reject(id);
-            if (action === "cancel") await bookingApi.cancel(id);
+            if (action === "reject") {
+                if (!window.confirm("Are you sure you want to REJECT this reservation? This action cannot be undone.")) return;
+                await bookingApi.reject(id);
+            }
+            if (action === "cancel") {
+                if (!window.confirm("Are you sure you want to cancel/delete this record?")) return;
+                await bookingApi.cancel(id);
+            }
             loadData();
         } catch (err) {
-            setNotice({ type: "error", text: "Action unauthorized or failed." });
+            setNotice({ type: "error", text: "Operation restricted." });
         }
     };
 
@@ -149,163 +165,197 @@ export default function Booking() {
     const stats = {
         pending: isAdmin ? pendingBookings.length : myBookings.filter(b => b.status === 'PENDING').length,
         approved: isAdmin ? allBookings.filter(b => b.status === 'APPROVED').length : myBookings.filter(b => b.status === 'APPROVED').length,
-        total: isAdmin ? allBookings.length : myBookings.length
     };
 
     return (
         <div className="page-shell">
             <div className="bg-layer bg-user" />
-            <div className="panel page-panel">
-                <AppNavbar title="Reservations" subtitle="Secure your campus resource allocations." profile={profileData} />
+            <div className="panel page-panel border-none">
+                <AppNavbar title="Global Logistics" subtitle="Manage resource allocation streams." profile={profileData} />
 
                 <main className="dashboard-content" style={{ padding: '0 1.5rem 2.5rem' }}>
                     {error && <div className="message error glass-alert">{error}</div>}
                     {notice.text && <div className={`message ${notice.type} glass-alert`}>{notice.text}</div>}
 
-                    {/* Quick Stats Grid */}
-                    <div className="stats-dashboard" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+                    <div className="stats-dashboard" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
                         <div className="stat-card glass-card">
                             <div className="stat-icon stats-icon--blue"><HiBell /></div>
                             <div className="stat-info">
-                                <h4 className="stat-label">Action Required</h4>
+                                <h4 className="stat-label">Queue</h4>
                                 <p className="stat-value">{stats.pending}</p>
                             </div>
                         </div>
                         <div className="stat-card glass-card">
                             <div className="stat-icon stats-icon--green"><HiCheckCircle /></div>
                             <div className="stat-info">
-                                <h4 className="stat-label">Confirmed</h4>
+                                <h4 className="stat-label">Active</h4>
                                 <p className="stat-value">{stats.approved}</p>
                             </div>
                         </div>
                         <div className="stat-card glass-card">
-                            <div className="stat-icon stats-icon--purple"><HiClipboardList /></div>
+                            <div className="stat-icon stats-icon--purple"><HiLightningBolt /></div>
                             <div className="stat-info">
-                                <h4 className="stat-label">System Load</h4>
-                                <p className="stat-value">Stable</p>
+                                <h4 className="stat-label">Velocity</h4>
+                                <p className="stat-value">Peak</p>
                             </div>
                         </div>
                     </div>
 
-                    {/* Workspace Control Section */}
                     <section className="glass-panel" style={{ padding: '2rem', background: 'rgba(255,255,255,0.7)', borderRadius: '24px' }}>
-                        <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                        <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem' }}>
                             <div>
-                                <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800 }}>
-                                    {isAdmin ? "Management Terminal" : "My Reservation Log"}
-                                </h3>
-                                <p className="muted" style={{ margin: '0.2rem 0 0' }}>Track and manage your institutional resource access.</p>
+                                <h3 style={{ margin: 0, fontWeight: 800 }}>Transaction Log</h3>
+                                <p className="muted">Global campus data flow.</p>
                             </div>
-                            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                                {isAdmin && (
-                                    <div className="tab-group" style={{ background: '#f1f5f9', padding: '0.35rem', borderRadius: '12px', display: 'flex', gap: '0.5rem' }}>
-                                        <button className={`tab-btn ${viewMode === 'PE' ? 'active' : ''}`} onClick={() => setViewMode('PE')} style={{ border: 'none', padding: '0.5rem 1rem', borderRadius: '9px', fontWeight: 700, cursor: 'pointer', background: viewMode === 'PE' ? '#fff' : 'transparent', boxShadow: viewMode === 'PE' ? '0 4px 10px rgba(0,0,0,0.05)' : 'none' }}>Active</button>
-                                        <button className={`tab-btn ${viewMode === 'ALL' ? 'active' : ''}`} onClick={() => setViewMode('ALL')} style={{ border: 'none', padding: '0.5rem 1rem', borderRadius: '9px', fontWeight: 700, cursor: 'pointer', background: viewMode === 'ALL' ? '#fff' : 'transparent', boxShadow: viewMode === 'ALL' ? '0 4px 10px rgba(0,0,0,0.05)' : 'none' }}>History</button>
-                                    </div>
-                                )}
-                                <button className="btn btn-primary" onClick={() => setIsFormOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <HiPlus /> New Request
-                                </button>
-                            </div>
+                            <button className="btn btn-primary" onClick={() => setIsFormOpen(true)}><HiPlus /> New Transaction</button>
                         </div>
 
-                        <div className="booking-list" style={{ display: 'grid', gap: '1rem' }}>
+                        <div className="booking-list" style={{ display: 'grid', gap: '1.25rem' }}>
                             {(isAdmin ? (viewMode === 'PE' ? pendingBookings : allBookings) : myBookings).map(b => (
-                                <article key={b.bookingId} className="booking-card glass-card" style={{ padding: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid var(--line-soft)' }}>
+                                <article key={b.bookingId} className="management-card glass-card" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderRadius: '20px' }}>
                                     <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
-                                        <div style={{ padding: '0.75rem', background: 'var(--brand-soft)', color: 'var(--brand)', borderRadius: '12px' }}><HiCalendar size={20} /></div>
-                                        <div>
-                                            <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800 }}>{b.title}</h4>
-                                            <p className="muted" style={{ margin: '0.2rem 0 0', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                <HiAcademicCap /> {b.facilityName} | <HiClock /> {safeFormatDate(b.bookingDate)} • {safeFormatTime(b.startTime)}
-                                            </p>
+                                        <div className="asset-icon-box" style={{ padding: '0.8rem', background: 'var(--brand-soft)', color: 'var(--brand)', borderRadius: '14px', position: 'relative' }}>
+                                            <HiCalendar size={20} />
+                                        </div>
+                                        <div className="card-title-group">
+                                            <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>{b.title}</h4>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.2rem' }}>
+                                                <p className="muted" style={{ fontSize: '0.8rem', margin: 0 }}>
+                                                    {b.facilityName} • {safeFormatDate(b.bookingDate)} at <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{safeFormatTime(b.startTime)}</span>
+                                                </p>
+                                                {isAdmin && (
+                                                    <span className="user-email-meta" style={{ background: '#f1f5f9', padding: '0.1rem 0.6rem', borderRadius: '999px', fontSize: '0.7rem' }}>
+                                                        {b.bookedByEmail || "System"}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
+
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
                                         <span className={statusClass(b.status)}>{b.status}</span>
-                                        {isAdmin && b.status === 'PENDING' && (
-                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                <button className="icon-btn-success" onClick={() => handleAdminAction(b.bookingId, 'approve')} style={{ background: '#ecfdf5', color: '#059669', border: 'none', padding: '0.5rem', borderRadius: '8px', cursor: 'pointer' }}><HiCheck /></button>
-                                                <button className="icon-btn-danger" onClick={() => handleAdminAction(b.bookingId, 'reject')} style={{ background: '#fff1f2', color: '#e11d48', border: 'none', padding: '0.5rem', borderRadius: '8px', cursor: 'pointer' }}><HiX /></button>
-                                            </div>
-                                        )}
-                                        {(!isAdmin || b.status !== 'PENDING') && (
-                                            <button className="btn-ghost" onClick={() => handleAdminAction(b.bookingId, 'cancel')} style={{ border: 'none', background: 'transparent', color: '#94a3b8', padding: '0.5rem', cursor: 'pointer' }}><HiTrash /></button>
-                                        )}
+                                        
+                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                            {isAdmin && b.status === 'PENDING' && (
+                                                <>
+                                                    <button 
+                                                        className="btn-icon btn-approve" 
+                                                        onClick={() => handleAdminAction(b.bookingId, 'approve')}
+                                                        title="Approve Reservation"
+                                                    >
+                                                        <HiCheck /> Approve
+                                                    </button>
+                                                    <button 
+                                                        className="btn-icon btn-reject" 
+                                                        onClick={() => handleAdminAction(b.bookingId, 'reject')}
+                                                        title="Reject Reservation"
+                                                    >
+                                                        <HiX /> Reject
+                                                    </button>
+                                                </>
+                                            )}
+                                            
+                                            {(!isAdmin || b.status !== 'PENDING') && (
+                                                <button 
+                                                    className="btn-icon btn-cancel" 
+                                                    onClick={() => handleAdminAction(b.bookingId, 'cancel')}
+                                                    style={{ width: '40px', height: '40px', padding: 0 }}
+                                                    title={isAdmin ? "Delete Log" : "Cancel Booking"}
+                                                >
+                                                    <HiTrash />
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 </article>
                             ))}
-                            {(isAdmin ? (viewMode === 'PE' ? pendingBookings : allBookings) : myBookings).length === 0 && (
-                                <div style={{ textAlign: 'center', padding: '4rem', opacity: 0.5 }}>
-                                    <HiShuffle size={48} style={{ marginBottom: '1rem' }} />
-                                    <p>No transactions identified in current filter.</p>
-                                </div>
-                            )}
                         </div>
                     </section>
                 </main>
             </div>
 
-            {/* Smart Booking Modal */}
             {isFormOpen && (
                 <div className="modern-modal-overlay" onClick={() => setIsFormOpen(false)}>
-                    <div className="modern-modal-content" onClick={e => e.stopPropagation()}>
+                    <div className="modern-modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '650px' }}>
                         <div className="modal-header">
                             <div>
-                                <h3 style={{ margin: 0 }}>New Reservation Request</h3>
-                                <p className="muted" style={{ margin: 0 }}>Step 1: Check availability</p>
+                                <h3 style={{ margin: 0 }}>Resource Allocation</h3>
+                                <p className="muted" style={{ margin: 0 }}>Configure session parameters.</p>
                             </div>
                             <button className="close-modal-btn" onClick={() => setIsFormOpen(false)}><HiX size={24} /></button>
                         </div>
 
-                        <div className="modal-body" style={{ padding: '0 2rem 2rem' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                        <div className="modal-body" style={{ padding: '0 2rem 2.5rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '2rem' }}>
                                 <div className="form-group">
-                                    <span>Select Resource</span>
+                                    <span>Target Resource</span>
                                     <select value={selectedResourceId} onChange={e => setSelectedResourceId(e.target.value)}>
-                                        <option value="">Choose Asset...</option>
-                                        {resources.map(r => <option key={r.id} value={r.id}>{r.name} ({r.location})</option>)}
+                                        <option value="">Select Asset...</option>
+                                        {resources.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                                     </select>
                                 </div>
                                 <div className="form-group">
-                                    <span>Reservation Date</span>
+                                    <span>Date</span>
                                     <input type="date" value={bookingDate} onChange={e => setBookingDate(e.target.value)} />
                                 </div>
                             </div>
 
-                            <button className="btn btn-primary" onClick={handleCheckAvailability} disabled={checkingAvailability} style={{ width: '100%', marginBottom: '2rem' }}>
-                                {checkingAvailability ? <><HiClock className="spin" /> Synchronizing...</> : <><HiSearch /> Verify Availability</>}
-                            </button>
-
-                            {resourceAvailability && (
-                                <div className="availability-grid" style={{ marginTop: '1.5rem' }}>
-                                     <h4 style={{ marginBottom: '1rem' }}>Available Time Slots</h4>
-                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '0.75rem' }}>
-                                        {(resourceAvailability.slots || []).map((slot, i) => (
-                                            <button 
-                                                key={i} 
-                                                className={`slot-btn ${selectedSlot === slot ? 'active' : ''}`}
-                                                onClick={() => setSelectedSlot(slot)}
-                                                style={{ border: '1px solid var(--line-soft)', padding: '0.6rem', borderRadius: '10px', background: selectedSlot === slot ? 'var(--brand)' : '#fff', color: selectedSlot === slot ? '#fff' : 'inherit', cursor: 'pointer', textAlign: 'center', fontWeight: 600 }}
-                                            >
-                                                {safeFormatTime(slot.startTime)}
-                                            </button>
-                                        ))}
-                                     </div>
-                                     {selectedSlot && (
-                                         <div className="form-group" style={{ marginTop: '1.5rem' }}>
-                                             <span>Reservation Purpose / Title</span>
-                                             <input value={bookingTitle} onChange={e => setBookingTitle(e.target.value)} placeholder="e.g. Physics Tutorial Group A" />
-                                         </div>
-                                     )}
+                            {isAdmin && (
+                                <div className="admin-override glass-panel" style={{ padding: '1rem', marginBottom: '1.5rem', background: 'var(--brand-soft)', border: '1px solid var(--brand)' }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontWeight: 800 }}>
+                                        <input type="checkbox" checked={useManualTime} onChange={e => setUseManualTime(e.target.checked)} />
+                                        Override Slots (Manual Entry)
+                                    </label>
+                                    {useManualTime && (
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+                                            <div className="form-group">
+                                                <span>Start</span>
+                                                <input type="time" value={manualStartTime} onChange={e => setManualStartTime(e.target.value)} />
+                                            </div>
+                                            <div className="form-group">
+                                                <span>End</span>
+                                                <input type="time" value={manualEndTime} onChange={e => setManualEndTime(e.target.value)} />
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
+
+                            {!useManualTime && (
+                                <div className="slot-management">
+                                    <h4 style={{ marginBottom: '1rem' }}>Available Slots</h4>
+                                    {checkingAvailability ? (
+                                        <div style={{ textAlign: 'center', padding: '2rem' }}><HiClock className="spin" size={32} /></div>
+                                    ) : (
+                                        <div className="slot-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '0.5rem' }}>
+                                            {(resourceAvailability?.availableSlots || []).map((slot, i) => (
+                                                <button 
+                                                    key={i} 
+                                                    className={`slot-chip ${selectedSlot === slot ? 'active' : ''}`}
+                                                    onClick={() => setSelectedSlot(slot)}
+                                                    style={{ border: '1px solid var(--line-soft)', padding: '0.75rem', borderRadius: '12px', background: selectedSlot === slot ? 'var(--brand)' : '#fff', color: selectedSlot === slot ? '#fff' : 'inherit', cursor: 'pointer', fontWeight: 700 }}
+                                                >
+                                                    {safeFormatTime(slot.startTime)}
+                                                </button>
+                                            ))}
+                                            {(resourceAvailability?.availableSlots || []).length === 0 && (
+                                                <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '2rem', opacity: 0.5 }}>No slots found. Try another date or resource.</div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                            
+                            <div className="form-group" style={{ marginTop: '2rem' }}>
+                                <span>Reservation Title</span>
+                                <input value={bookingTitle} onChange={e => setBookingTitle(e.target.value)} placeholder="Main Session Identification" />
+                            </div>
                         </div>
 
                         <div className="modal-actions" style={{ display: 'flex', gap: '1rem', padding: '1.5rem 2rem', borderTop: '1px solid var(--line-soft)' }}>
                             <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => setIsFormOpen(false)}>Discard</button>
-                            <button className="btn btn-primary" style={{ flex: 2 }} onClick={handleCreateBooking} disabled={submitting || !selectedSlot}>
-                                {submitting ? "Finalizing..." : "Submit Reservation"}
+                            <button className="btn btn-primary" style={{ flex: 2 }} onClick={handleCreateBooking} disabled={submitting || (!useManualTime && !selectedSlot)}>
+                                {submitting ? "Processing..." : "Confirm & Commit"}
                             </button>
                         </div>
                     </div>
@@ -313,8 +363,4 @@ export default function Booking() {
             )}
         </div>
     );
-}
-
-function HiShuffle({ size, style }) {
-    return <HiClipboardList size={size} style={{ ...style, opacity: 0.3 }} />;
 }

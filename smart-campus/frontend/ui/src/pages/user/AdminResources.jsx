@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../../api";
+import api, { clearStoredAccessToken } from "../../api";
 import { roleHomePath, normalizeRole } from "../../utils/roleHome";
 import AppNavbar from "../../components/AppNavbar";
-import { HiPlus, HiCollection, HiOfficeBuilding, HiUsers, HiLocationMarker, HiClock, HiUpload, HiTrash, HiRefresh, HiCog } from "react-icons/hi";
+import { HiPlus, HiCollection, HiOfficeBuilding, HiUsers, HiLocationMarker, HiClock, HiUpload, HiTrash, HiRefresh, HiCog, HiScissors, HiPencil } from "react-icons/hi";
 
 const FACILITY_TYPES = [
     "LECTURE_HALL",
@@ -23,6 +23,7 @@ const initialForm = {
     location: "",
     availableFrom: "08:00",
     availableTo: "17:00",
+    slotDurationMinutes: "60",
     status: "ACTIVE",
 };
 
@@ -62,8 +63,21 @@ export default function AdminResources() {
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
     const [isAddMode, setIsAddMode] = useState(false);
+    const [editingId, setEditingId] = useState(null);
+
+    const handleLogout = async () => {
+        try {
+            await api.post("/auth/logout");
+        } catch {
+            // Even if backend logout fails, clear local auth state and route to login.
+        } finally {
+            clearStoredAccessToken();
+            navigate("/login", { replace: true });
+        }
+    };
 
     const loadData = async () => {
+        setError("");
         try {
             const [adminProfileResponse, resourcesResponse] = await Promise.all([
                 api.get("/user/Admin/me").catch(() => api.get("/user/me")),
@@ -78,6 +92,7 @@ export default function AdminResources() {
 
             setProfileData(adminProfileResponse.data);
             setResources(Array.isArray(resourcesResponse.data) ? resourcesResponse.data : []);
+            setError("");
         } catch (loadError) {
             const status = loadError.response?.status;
             if (status === 401) {
@@ -124,60 +139,90 @@ export default function AdminResources() {
         setError("");
         setSuccess("");
 
-        if (!imageFile) {
-            setError("Resource image is required for cataloging.");
-            return;
-        }
-
         try {
             setSubmitting(true);
             const payload = {
                 ...form,
                 capacity: Number(form.capacity),
-                availableFrom: `${form.availableFrom}:00`,
-                availableTo: `${form.availableTo}:00`,
+                slotDurationMinutes: Number(form.slotDurationMinutes),
+                availableFrom: form.availableFrom.length === 5 ? `${form.availableFrom}:00` : form.availableFrom,
+                availableTo: form.availableTo.length === 5 ? `${form.availableTo}:00` : form.availableTo,
             };
 
             const formData = new FormData();
             formData.append("resource", new Blob([JSON.stringify(payload)], { type: "application/json" }));
-            formData.append("image", imageFile);
+            if (imageFile) formData.append("image", imageFile);
 
-            const response = await api.post("/facilities", formData, {
-                headers: { "Content-Type": "multipart/form-data" },
-            });
+            let response;
+            if (editingId) {
+                response = await api.put(`/facilities/${editingId}`, formData, {
+                    headers: { "Content-Type": "multipart/form-data" },
+                });
+                setResources(curr => curr.map(r => r.id === editingId ? response.data : r));
+                setSuccess("Resource updated successfully!");
+            } else {
+                if (!imageFile) {
+                    setError("Resource image is required for new entries.");
+                    setSubmitting(false);
+                    return;
+                }
+                response = await api.post("/facilities", formData, {
+                    headers: { "Content-Type": "multipart/form-data" },
+                });
+                setResources(curr => [response.data, ...curr]);
+                setSuccess("Resource cataloged successfully!");
+            }
 
-            setResources(curr => [response.data, ...curr]);
-            setSuccess("Resource cataloged successfully!");
             setForm(initialForm);
             setImageFile(null);
             setIsAddMode(false);
+            setEditingId(null);
         } catch (err) {
-            setError(getErrorMessage(err, "Creation failed."));
+            setError(getErrorMessage(err, "Operation failed."));
         } finally {
             setSubmitting(false);
         }
     };
 
+    const handleEdit = (res) => {
+        setEditingId(res.id);
+        setForm({
+            name: res.name,
+            type: res.type,
+            capacity: String(res.capacity),
+            location: res.location,
+            availableFrom: res.availableFrom?.slice(0, 5) || "08:00",
+            availableTo: res.availableTo?.slice(0, 5) || "17:00",
+            slotDurationMinutes: String(res.slotDurationMinutes || 60),
+            status: res.status,
+        });
+        setIsAddMode(true);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
     const handleStatusChange = async (id, newStatus) => {
         try {
+            setError("");
             setUpdatingId(id);
             await api.patch(`/facilities/${id}/status`, null, { params: { status: newStatus } });
             setResources(curr => curr.map(r => r.id === id ? { ...r, status: newStatus } : r));
             setSuccess(`Status updated to ${formatEnumLabel(newStatus)}`);
         } catch (err) {
-            setError("Failed to update status.");
+            setError(getErrorMessage(err, "Failed to update status."));
         } finally {
             setUpdatingId(null);
         }
     };
 
     const handleRemove = async (id) => {
-        if (!window.confirm("Permanently remove this resource?")) return;
+        if (!window.confirm("Permanently remove this resource? This will also delete all associated bookings.")) return;
         try {
+            setError("");
             await api.delete(`/facilities/${id}`);
             setResources(curr => curr.filter(r => r.id !== id));
+            setSuccess("Resource and its metadata permanently purged.");
         } catch (err) {
-            setError("Could not delete resource.");
+            setError(getErrorMessage(err, "Could not delete resource."));
         }
     };
 
@@ -208,6 +253,7 @@ export default function AdminResources() {
                     title="Resource Catalog" 
                     subtitle="Management terminal for campus assets." 
                     profile={profileData}
+                    onLogout={handleLogout}
                 />
 
                 <main className="dashboard-content" style={{ padding: '0 1.5rem 2.5rem' }}>
@@ -246,7 +292,13 @@ export default function AdminResources() {
                         </div>
                         <button 
                             className={`btn ${isAddMode ? 'btn-ghost' : 'btn-primary'}`} 
-                            onClick={() => setIsAddMode(!isAddMode)}
+                            onClick={() => {
+                                setIsAddMode(!isAddMode);
+                                if (isAddMode) {
+                                    setEditingId(null);
+                                    setForm(initialForm);
+                                }
+                            }}
                             style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                         >
                             {isAddMode ? <HiRefresh /> : <HiPlus />}
@@ -257,7 +309,8 @@ export default function AdminResources() {
                     {isAddMode && (
                         <section className="glass-panel" style={{ padding: '2rem', marginBottom: '2.5rem', border: '2px solid var(--brand-soft)' }}>
                             <h4 style={{ marginTop: 0, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--brand)' }}>
-                                <HiPlus /> Create New Inventory Entry
+                                {editingId ? <HiPencil /> : <HiPlus />} 
+                                {editingId ? `Update ${form.name}` : "Create New Inventory Entry"}
                             </h4>
                             <form className="form-grid" onSubmit={handleSubmit}>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem' }}>
@@ -280,12 +333,24 @@ export default function AdminResources() {
                                         <input name="location" value={form.location} onChange={handleChange} placeholder="Block C, Room 102" required />
                                     </div>
                                     <div className="form-group">
-                                        <span>From</span>
+                                        <span>Available From</span>
                                         <input name="availableFrom" type="time" value={form.availableFrom} onChange={handleChange} required />
                                     </div>
                                     <div className="form-group">
-                                        <span>To</span>
+                                        <span>Available To</span>
                                         <input name="availableTo" type="time" value={form.availableTo} onChange={handleChange} required />
+                                    </div>
+                                    <div className="form-group">
+                                        <span>Slot Configuration (Min)</span>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <HiScissors style={{ color: 'var(--brand)' }} />
+                                            <select name="slotDurationMinutes" value={form.slotDurationMinutes} onChange={handleChange}>
+                                                <option value="30">30 Minutes</option>
+                                                <option value="60">60 Minutes</option>
+                                                <option value="90">90 Minutes</option>
+                                                <option value="120">120 Minutes</option>
+                                            </select>
+                                        </div>
                                     </div>
                                     <div className="form-group">
                                         <span>Status</span>
@@ -293,26 +358,34 @@ export default function AdminResources() {
                                             {FACILITY_STATUSES.map(s => <option key={s} value={s}>{formatEnumLabel(s)}</option>)}
                                         </select>
                                     </div>
-                                    <div className="form-group">
-                                        <span>Image Asset</span>
+                                    <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                                        <span>Image Asset {editingId && "(Optional to Change)"}</span>
                                         <label className="custom-file-upload" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.7rem', border: '1px dashed var(--line-soft)', borderRadius: '12px', cursor: 'pointer', background: '#fff' }}>
                                             <HiUpload /> {imageFile ? imageFile.name : "Choose File"}
-                                            <input type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} required />
+                                            <input type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} required={!editingId} />
                                         </label>
                                     </div>
                                 </div>
 
-                                {previewUrl && (
+                                {(previewUrl || (editingId && !imageFile)) && (
                                     <div style={{ marginTop: '1.5rem', width: '200px', height: '120px', borderRadius: '12px', overflow: 'hidden', border: '2px solid var(--brand-soft)' }}>
-                                        <img src={previewUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        <img 
+                                            src={previewUrl || buildAssetUrl(resources.find(r => r.id === editingId)?.imageUrl)} 
+                                            alt="Preview" 
+                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                        />
                                     </div>
                                 )}
 
                                 <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem' }}>
                                     <button className="btn btn-primary" type="submit" disabled={submitting}>
-                                        {submitting ? "Sycnrhonizing..." : "Finalize Record"}
+                                        {submitting ? "Processing..." : editingId ? "Save Changes" : "Finalize Record"}
                                     </button>
-                                    <button className="btn btn-ghost" type="button" onClick={() => setIsAddMode(false)}>Cancel</button>
+                                    <button className="btn btn-ghost" type="button" onClick={() => {
+                                        setIsAddMode(false);
+                                        setEditingId(null);
+                                        setForm(initialForm);
+                                    }}>Cancel</button>
                                 </div>
                             </form>
                         </section>
@@ -332,15 +405,19 @@ export default function AdminResources() {
                                     </div>
                                 </div>
                                 <div style={{ padding: '1.25rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                                    <span style={{ fontSize: '0.7rem', color: 'var(--brand)', fontWeight: 750, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                        {formatEnumLabel(res.type)}
-                                    </span>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                        <span style={{ fontSize: '0.7rem', color: 'var(--brand)', fontWeight: 750, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                            {formatEnumLabel(res.type)}
+                                        </span>
+                                        <button onClick={() => handleEdit(res)} style={{ border: 'none', background: 'transparent', color: 'var(--brand)', cursor: 'pointer' }} title="Edit Configuration"><HiPencil size={18} /></button>
+                                    </div>
                                     <h4 style={{ margin: '0.4rem 0', fontSize: '1.1rem', fontWeight: 800 }}>{res.name}</h4>
                                     
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', fontSize: '0.8rem', color: '#64748b', marginBottom: '1.25rem' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><HiUsers /> {res.capacity} Seats</div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><HiLocationMarker /> {res.location}</div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', gridColumn: 'span 2' }}><HiClock /> {res.availableFrom?.slice(0, 5)} - {res.availableTo?.slice(0, 5)}</div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><HiClock /> {res.availableFrom?.slice(0, 5) || "--:--"} - {res.availableTo?.slice(0, 5) || "--:--"}</div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }} title="Booking Interval"><HiScissors /> {res.slotDurationMinutes || 60}m Slots</div>
                                     </div>
 
                                     <div style={{ marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid var(--line-soft)' }}>
