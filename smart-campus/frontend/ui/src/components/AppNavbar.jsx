@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, Link } from "react-router-dom";
 import { normalizeRole, roleHomePath } from "../utils/roleHome";
 
 function getUserDisplayName(profile) {
@@ -22,45 +22,49 @@ export default function AppNavbar({ title, subtitle, profile, onLogout }) {
     const isAdmin = roleLabel === "ADMIN";
 
     return (
-        <header className="top-nav top-nav--glass">
-            <div>
-                <h1 className="brand">{title}</h1>
-                {subtitle && <p className="subtitle">{subtitle}</p>}
+        <header className="top-nav top-nav--glass professional-header">
+            <div className="brand-section">
+                <Link to={homePath} className="brand-logo">
+                    <span className="logo-icon">🎓</span>
+                    <div>
+                        <h1 className="brand-text">SmartCampus</h1>
+                        <p className="subtitle-text">{title}</p>
+                    </div>
+                </Link>
             </div>
 
-            <div className="nav-main">
-                <nav className="nav-group professional-nav">
+            <nav className="nav-center">
+                <div className="nav-group professional-nav">
                     <NavLink className={({ isActive }) => `nav-link${isActive ? " active" : ""}`} to={homePath} end>
-                        Home
+                        Dashboard
                     </NavLink>
                     <NavLink className={({ isActive }) => `nav-link${isActive ? " active" : ""}`} to="/resources">
                         Resources
                     </NavLink>
                     <NavLink className={({ isActive }) => `nav-link${isActive ? " active" : ""}`} to="/booking">
-                        Booking
-                    </NavLink>
-                    <NavLink className={({ isActive }) => `nav-link${isActive ? " active" : ""}`} to="/settings">
-                        Settings
+                        My Bookings
                     </NavLink>
                     {isAdmin && (
                         <NavLink
                             className={({ isActive }) => `nav-link${isActive ? " active" : ""}`}
                             to="/admin/resources"
                         >
-                            Manage
+                            Management
                         </NavLink>
                     )}
-                </nav>
+                </div>
+            </nav>
 
-                <div className="nav-user">
-                    <NavLink className="user-pill" to="/profile">
-                        <span className="user-avatar">{initials}</span>
-                        <span className="user-details">
-                            <span className="user-name">{displayName}</span>
-                            <span className="user-role">{roleLabel}</span>
-                        </span>
+            <div className="nav-end">
+                <div className="nav-user-section">
+                    <NavLink className="user-profile-pill" to="/profile">
+                        <div className="avatar-circle">{initials}</div>
+                        <div className="user-info-hint">
+                            <span className="user-name-text">{displayName}</span>
+                            <span className="user-role-badge">{roleLabel}</span>
+                        </div>
                     </NavLink>
-                    <button className="btn btn-danger btn-logout" type="button" onClick={onLogout}>
+                    <button className="logout-icon-btn" type="button" onClick={onLogout} title="Logout">
                         Logout
                     </button>
                 </div>

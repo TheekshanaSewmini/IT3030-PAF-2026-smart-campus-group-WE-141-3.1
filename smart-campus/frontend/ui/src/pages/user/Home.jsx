@@ -88,59 +88,105 @@ export default function Home() {
     return (
         <div className="page-shell">
             <div className="bg-layer bg-user" />
-            <div className="panel page-panel">
+            <div className="page-container main-dashboard">
                 <AppNavbar
-                    title="Home"
-                    subtitle={homeData?.welcomeMessage || "Welcome to Smart Campus."}
+                    title="Dashboard"
                     profile={profileData}
                     onLogout={handleLogout}
                 />
 
-                {error && <p className="message error">{error}</p>}
+                <main className="dashboard-content">
+                    {error && <div className="message error glass-alert">{error}</div>}
 
-                {!error && (
-                    <>
-                        <section className="section">
-                            <h3>Welcome Back</h3>
-                            <p>
-                                Logged in as <strong>{fullName}</strong> ({roleLabel}).
-                            </p>
-                        </section>
+                    {!error && (
+                        <div className="dashboard-grid">
+                            {/* Welcome Section */}
+                            <section className="welcome-hero glass-panel">
+                                <div className="hero-content">
+                                    <span className="hero-badge">Welcome Back</span>
+                                    <h2 className="hero-title">
+                                        Hello, <span className="text-highlight">{profileData?.name || "User"}</span>!
+                                    </h2>
+                                    <p className="hero-subtitle">
+                                        {homeData?.welcomeMessage || "Manage your university resources and bookings in one place."}
+                                    </p>
+                                    <div className="hero-actions">
+                                        <Link to="/booking" className="btn btn-primary hero-btn">
+                                            Manage Bookings <span>→</span>
+                                        </Link>
+                                    </div>
+                                </div>
+                                <div className="hero-visual">
+                                    <div className="visual-circle blue" />
+                                    <div className="visual-circle purple" />
+                                </div>
+                            </section>
 
-                        <div className="stats">
-                            <article className="stat-card">
-                                <h3>Notifications</h3>
-                                <p className="value">{homeData?.notifications ?? 0}</p>
-                            </article>
-                            <article className="stat-card">
-                                <h3>Open Tasks</h3>
-                                <p className="value">{homeData?.tasks ?? 0}</p>
-                            </article>
-                            <article className="stat-card">
-                                <h3>Role</h3>
-                                <p className="value">{roleLabel}</p>
-                            </article>
-                        </div>
-
-                        <section className="section">
-                            <h3>Quick Navigation</h3>
-                            <div className="actions-row">
-                                <Link className="btn btn-secondary" to="/resources">
-                                    Resources
-                                </Link>
-                                <Link className="btn btn-secondary" to="/booking">
-                                    Booking
-                                </Link>
-                                <Link className="btn btn-secondary" to="/profile">
-                                    View Profile
-                                </Link>
-                                <Link className="btn btn-secondary" to="/settings">
-                                    Account Settings
-                                </Link>
+                            {/* Status Section */}
+                            <div className="stats-row">
+                                <article className="stat-card glass-card">
+                                    <div className="stat-icon">🔔</div>
+                                    <div className="stat-info">
+                                        <h4 className="stat-label">Notifications</h4>
+                                        <p className="stat-value">{homeData?.notifications ?? 0}</p>
+                                    </div>
+                                </article>
+                                <article className="stat-card glass-card">
+                                    <div className="stat-icon">📅</div>
+                                    <div className="stat-info">
+                                        <h4 className="stat-label">Active Bookings</h4>
+                                        <p className="stat-value">{homeData?.tasks ?? 0}</p>
+                                    </div>
+                                </article>
+                                <article className="stat-card glass-card">
+                                    <div className="stat-icon">🛡️</div>
+                                    <div className="stat-info">
+                                        <h4 className="stat-label">Account Role</h4>
+                                        <p className="stat-value highlight-role">{roleLabel}</p>
+                                    </div>
+                                </article>
                             </div>
-                        </section>
-                    </>
-                )}
+
+                            {/* Quick Access Section */}
+                            <section className="quick-access-section glass-panel">
+                                <div className="section-header">
+                                    <h3>Quick Access</h3>
+                                    <p>Jump to your most used features</p>
+                                </div>
+                                <div className="quick-nav-grid">
+                                    <Link to="/resources" className="nav-card">
+                                        <div className="nav-card-icon">🏗️</div>
+                                        <div className="nav-card-body">
+                                            <h4>Resources</h4>
+                                            <p>Browse available campus facilities</p>
+                                        </div>
+                                    </Link>
+                                    <Link to="/booking" className="nav-card">
+                                        <div className="nav-card-icon">📑</div>
+                                        <div className="nav-card-body">
+                                            <h4>Booking</h4>
+                                            <p>Check availability and reserve</p>
+                                        </div>
+                                    </Link>
+                                    <Link to="/profile" className="nav-card">
+                                        <div className="nav-card-icon">👤</div>
+                                        <div className="nav-card-body">
+                                            <h4>My Profile</h4>
+                                            <p>View and manage your account</p>
+                                        </div>
+                                    </Link>
+                                    <Link to="/settings" className="nav-card">
+                                        <div className="nav-card-icon">⚙️</div>
+                                        <div className="nav-card-body">
+                                            <h4>Settings</h4>
+                                            <p>Preferences and security</p>
+                                        </div>
+                                    </Link>
+                                </div>
+                            </section>
+                        </div>
+                    )}
+                </main>
             </div>
         </div>
     );

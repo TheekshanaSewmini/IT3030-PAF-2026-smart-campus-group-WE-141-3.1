@@ -2,11 +2,41 @@ import axios from "axios";
 
 const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 const normalizedBaseUrl = configuredBaseUrl.replace(/\/+$/, "");
+const ACCESS_TOKEN_STORAGE_KEY = "smartcampus_access_token";
 
 const api = axios.create({
     baseURL: normalizedBaseUrl,
     withCredentials: true,
 });
+
+export const getStoredAccessToken = () => {
+    if (typeof window === "undefined") {
+        return "";
+    }
+
+    return window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY) || "";
+};
+
+export const setStoredAccessToken = (token) => {
+    if (typeof window === "undefined") {
+        return;
+    }
+
+    if (token && String(token).trim()) {
+        window.localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, String(token));
+        return;
+    }
+
+    window.localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+};
+
+export const clearStoredAccessToken = () => {
+    if (typeof window === "undefined") {
+        return;
+    }
+
+    window.localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+};
 
 let isRefreshing = false;
 let failedQueue = [];
@@ -23,6 +53,14 @@ const processQueue = (error, token = null) => {
     failedQueue = [];
 };
 
+api.interceptors.request.use((config) => {
+    const token = getStoredAccessToken();
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+});
+
 api.interceptors.response.use(
     (response) => response,
     async (error) => {
@@ -36,7 +74,15 @@ api.interceptors.response.use(
             requestUrl.includes("/auth/resend-otp");
 
         const responseStatus = error.response?.status;
-        const shouldTryRefresh = responseStatus === 401 || responseStatus === 403;
+
+        // Log error details for debugging
+        console.error(`[API Error] ${originalRequest?.method?.toUpperCase()} ${requestUrl}`, {
+            status: responseStatus,
+            message: error.message,
+            data: error.response?.data,
+        });
+
+        const shouldTryRefresh = responseStatus === 401;
 
         if (
             shouldTryRefresh &&
@@ -56,11 +102,28 @@ api.interceptors.response.use(
             isRefreshing = true;
 
             try {
-                await api.post("/auth/refresh");
-                processQueue(null, "refreshed");
+                const refreshResponse = await api.post("/auth/refresh");
+                const refreshedAccessToken = refreshResponse?.data?.accessToken;
+
+                if (refreshedAccessToken) {
+                    setStoredAccessToken(refreshedAccessToken);
+                    originalRequest.headers = originalRequest.headers || {};
+                    originalRequest.headers.Authorization = `Bearer ${refreshedAccessToken}`;
+                }
+
+                processQueue(null, refreshedAccessToken || "refreshed");
                 return api(originalRequest);
             } catch (refreshError) {
                 processQueue(refreshError, null);
+                clearStoredAccessToken();
+                try {
+                    await api.post("/auth/logout");
+                } catch {
+                    // Ignore logout failures here; redirect is the important action.
+                }
+                if (typeof window !== "undefined" && !window.location.pathname.includes("/login")) {
+                    window.location.replace("/login");
+                }
                 return Promise.reject(refreshError);
             } finally {
                 isRefreshing = false;

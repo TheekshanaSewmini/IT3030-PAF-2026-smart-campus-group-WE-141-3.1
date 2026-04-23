@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import api from "../../api";
+import api, { setStoredAccessToken } from "../../api";
 import { roleHomePath } from "../../utils/roleHome";
 
 const getErrorMessage = (error, fallback) => {
@@ -73,6 +73,12 @@ export default function Login() {
             }
 
             const role = response.data.role;
+            const accessToken = response.data.accessToken;
+
+            if (accessToken) {
+                setStoredAccessToken(accessToken);
+            }
+
             setNotice({ type: "success", text: "Login successful. Redirecting..." });
             navigate(roleHomePath(role), { replace: true });
         } catch (error) {

@@ -15,6 +15,18 @@ function getErrorMessage(error, fallback) {
         return payload.message;
     }
 
+    // Try to get error message from nested structures
+    if (payload?.error) {
+        return payload.error;
+    }
+
+    // Log the full error for debugging
+    console.error("API Error Details:", {
+        status: error?.response?.status,
+        data: payload,
+        config: error?.config
+    });
+
     return fallback;
 }
 
@@ -32,7 +44,10 @@ function formatTime(timeText) {
         return "-";
     }
 
-    const [hours, minutes] = String(timeText).split(":");
+    const parts = Array.isArray(timeText) ? timeText : String(timeText).split(":");
+    const hours = parts[0];
+    const minutes = parts[1];
+
     if (hours === undefined || minutes === undefined) {
         return timeText;
     }
@@ -42,8 +57,16 @@ function formatTime(timeText) {
     return parsed.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-function toMinutes(timeText) {
-    const [hours, minutes] = String(timeText || "").split(":");
+function toMinutes(timeValue) {
+    if (!timeValue) return NaN;
+
+    // Handle array format [HH, mm] or [HH, mm, ss] if Jackson sends it that way
+    if (Array.isArray(timeValue)) {
+        const [h, m] = timeValue;
+        return (Number(h) || 0) * 60 + (Number(m) || 0);
+    }
+
+    const [hours, minutes] = String(timeValue).split(":");
     const hourNumber = Number(hours);
     const minuteNumber = Number(minutes);
 
@@ -163,7 +186,7 @@ export default function Booking() {
             }
         } catch (loadError) {
             const status = loadError.response?.status;
-            if (status === 401 || status === 403) {
+            if (status === 401) {
                 navigate("/login", { replace: true });
                 return;
             }
@@ -242,6 +265,11 @@ export default function Booking() {
                 text: `Resource ID ${selectedResourceId} is available for selected time slot.`,
             });
         } catch (availabilityError) {
+            if (availabilityError?.response?.status === 401) {
+                navigate("/login", { replace: true });
+                return;
+            }
+
             setResourceAvailability(null);
             setNotice({
                 type: "error",
@@ -273,14 +301,18 @@ export default function Booking() {
 
         setSubmitting(true);
         try {
-            await bookingApi.create({
+            const bookingPayload = {
                 title: form.title.trim(),
                 description: form.description.trim() || null,
                 facilityAssetId: Number(selectedResourceId),
                 bookingDate: form.bookingDate,
                 startTime: form.startTime,
                 endTime: form.endTime,
-            });
+            };
+
+            console.log("Submitting booking with payload:", bookingPayload);
+
+            await bookingApi.create(bookingPayload);
 
             setNotice({
                 type: "success",
@@ -290,9 +322,16 @@ export default function Booking() {
             await loadPageData();
             await loadResourceAvailability(Number(selectedResourceId), form.bookingDate);
         } catch (submitError) {
+            if (submitError?.response?.status === 401) {
+                navigate("/login", { replace: true });
+                return;
+            }
+
+            const errorMsg = getErrorMessage(submitError, "Failed to submit booking request.");
+            console.error("Booking creation error:", submitError);
             setNotice({
                 type: "error",
-                text: getErrorMessage(submitError, "Failed to submit booking request."),
+                text: errorMsg,
             });
         } finally {
             setSubmitting(false);
@@ -314,6 +353,11 @@ export default function Booking() {
 
             await loadPageData();
         } catch (actionError) {
+            if (actionError?.response?.status === 401) {
+                navigate("/login", { replace: true });
+                return;
+            }
+
             setNotice({
                 type: "error",
                 text: getErrorMessage(actionError, "Failed to update booking request."),

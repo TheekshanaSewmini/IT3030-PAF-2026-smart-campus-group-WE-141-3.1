@@ -29,7 +29,7 @@ public class Booking {
     @Column(length = 500)
     private String description;
 
-    @Column(nullable = false, length = 150)
+    @Column(nullable = false, length = 200)
     private String location;
 
     @ManyToOne(fetch = FetchType.LAZY)
