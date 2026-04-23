@@ -2,6 +2,7 @@ com\smartcampus\smart_campus\enums\Year.class
 com\smartcampus\smart_campus\dtos\UserDto.class
 com\smartcampus\smart_campus\catalog\dtos\FacilityAssetDto$UpdateRequest.class
 com\smartcampus\smart_campus\enums\RecoveryChannel.class
+com\smartcampus\smart_campus\booking\dtos\BookingDto$TimeSlot.class
 com\smartcampus\smart_campus\catalog\service\FacilityAssetService.class
 com\smartcampus\smart_campus\records\LoginRequest.class
 com\smartcampus\smart_campus\booking\dtos\BookingDto$AvailableResourceResponse.class
