@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../../api";
 import { normalizeRole, roleHomePath } from "../../utils/roleHome";
+import AppNavbar from "../../components/AppNavbar";
 
 export default function Dashboard() {
     const navigate = useNavigate();
@@ -79,21 +80,12 @@ export default function Dashboard() {
         <div className="page-shell">
             <div className="bg-layer bg-user" />
             <div className="panel page-panel">
-                <header className="top-nav">
-                    <div>
-                        <h1 className="brand">Dashboard</h1>
-                        <p className="subtitle">{homeData?.welcomeMessage || "Overview panel."}</p>
-                    </div>
-
-                    <div className="nav-group">
-                        <Link className="nav-link" to="/dashboard">Dashboard</Link>
-                        <Link className="nav-link" to="/profile">Profile</Link>
-                        <Link className="nav-link" to="/settings">Settings</Link>
-                        <button className="btn btn-danger" type="button" onClick={handleLogout}>
-                            Logout
-                        </button>
-                    </div>
-                </header>
+                <AppNavbar
+                    title="Dashboard"
+                    subtitle={homeData?.welcomeMessage || "Overview panel."}
+                    profile={profile}
+                    onLogout={handleLogout}
+                />
 
                 {error && <p className="message error">{error}</p>}
 
@@ -117,6 +109,7 @@ export default function Dashboard() {
                         <section className="section">
                             <h3>Admin Quick Actions</h3>
                             <div className="actions-row">
+                                <Link className="btn btn-primary" to="/admin/resources">Add Resource</Link>
                                 <Link className="btn btn-secondary" to="/profile">Manage Profile</Link>
                                 <Link className="btn btn-secondary" to="/settings">User Settings</Link>
                             </div>

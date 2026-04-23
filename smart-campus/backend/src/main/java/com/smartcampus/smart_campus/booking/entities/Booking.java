@@ -1,6 +1,7 @@
 package com.smartcampus.smart_campus.booking.entities;
 
 import com.smartcampus.smart_campus.booking.enums.BookingStatus;
+import com.smartcampus.smart_campus.catalog.entities.FacilityAsset;
 import com.smartcampus.smart_campus.entities.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -28,8 +29,12 @@ public class Booking {
     @Column(length = 500)
     private String description;
 
-    @Column(nullable = false, length = 150)
+    @Column(nullable = false, length = 200)
     private String location;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "facility_asset_id")
+    private FacilityAsset facilityAsset;
 
     @Column(nullable = false)
     private LocalDate bookingDate;

@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 
 public class BookingDto {
 
@@ -16,8 +17,8 @@ public class BookingDto {
 
             String description,
 
-            @NotBlank(message = "Location is required")
-            String location,
+            @NotNull(message = "Resource id is required")
+            Long facilityAssetId,
 
             @NotNull(message = "Booking date is required")
             LocalDate bookingDate,
@@ -35,8 +36,8 @@ public class BookingDto {
 
             String description,
 
-            @NotBlank(message = "Location is required")
-            String location,
+            @NotNull(message = "Resource id is required")
+            Long facilityAssetId,
 
             @NotNull(message = "Booking date is required")
             LocalDate bookingDate,
@@ -52,6 +53,8 @@ public class BookingDto {
             Long bookingId,
             String title,
             String description,
+            Long facilityAssetId,
+            String facilityName,
             String location,
             LocalDate bookingDate,
             LocalTime startTime,
@@ -60,5 +63,30 @@ public class BookingDto {
             LocalDateTime createdAt,
             Long bookedByUserId,
             String bookedByEmail
+    ) {}
+
+    public record AvailableResourceResponse(
+            Long facilityAssetId,
+            String name,
+            String location,
+            LocalTime availableFrom,
+            LocalTime availableTo
+    ) {}
+
+    public record BookedSlotResponse(
+            Long bookingId,
+            LocalTime startTime,
+            LocalTime endTime,
+            BookingStatus status
+    ) {}
+
+    public record ResourceAvailabilityResponse(
+            Long facilityAssetId,
+            String name,
+            String location,
+            LocalDate bookingDate,
+            LocalTime availableFrom,
+            LocalTime availableTo,
+            List<BookedSlotResponse> bookedSlots
     ) {}
 }

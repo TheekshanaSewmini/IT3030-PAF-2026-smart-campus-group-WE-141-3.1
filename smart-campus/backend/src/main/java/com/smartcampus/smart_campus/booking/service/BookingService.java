@@ -3,6 +3,8 @@ package com.smartcampus.smart_campus.booking.service;
 import com.smartcampus.smart_campus.booking.dtos.BookingDto;
 import com.smartcampus.smart_campus.entities.User;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 public interface BookingService {
@@ -16,6 +18,12 @@ public interface BookingService {
     List<BookingDto.BookingResponse> getMyBookings(User user);
 
     List<BookingDto.BookingResponse> getAllBookings();
+
+    List<BookingDto.BookingResponse> getPendingBookings();
+
+    List<BookingDto.AvailableResourceResponse> getAvailableResources(LocalDate bookingDate, LocalTime startTime, LocalTime endTime);
+
+    BookingDto.ResourceAvailabilityResponse getResourceAvailability(Long facilityAssetId, LocalDate bookingDate);
 
     BookingDto.BookingResponse approveBooking(Long bookingId);
 
