@@ -1,6 +1,7 @@
-import { NavLink, Link } from "react-router-dom";
+import { NavLink, Link, useNavigate } from "react-router-dom";
 import { normalizeRole, roleHomePath } from "../utils/roleHome";
 import { HiAcademicCap, HiLogout } from "react-icons/hi";
+import api from "../api";
 
 function getUserDisplayName(profile) {
     const fullName = `${profile?.name || ""} ${profile?.lastName || ""}`.trim();
@@ -15,7 +16,19 @@ function getUserDisplayName(profile) {
     return "Campus User";
 }
 
-export default function AppNavbar({ title, subtitle, profile, onLogout }) {
+export default function AppNavbar({ title, subtitle, profile }) {
+    const navigate = useNavigate();
+    
+    const handleLogout = async () => {
+        try {
+            await api.post("/auth/logout", {}, { withCredentials: true });
+        } catch (err) {
+            console.log("Logout error:", err.message);
+        } finally {
+            navigate("/login", { replace: true });
+        }
+    };
+
     const roleLabel = normalizeRole(profile?.role) || "USER";
     const homePath = roleHomePath(profile?.role);
     const displayName = getUserDisplayName(profile);
@@ -67,7 +80,7 @@ export default function AppNavbar({ title, subtitle, profile, onLogout }) {
                             <span className="user-role-badge">{roleLabel}</span>
                         </div>
                     </NavLink>
-                    <button className="logout-icon-btn" type="button" onClick={onLogout} title="Logout">
+                    <button className="logout-icon-btn" type="button" onClick={handleLogout} title="Logout">
                         <HiLogout size={18} /> <span>Logout</span>
                     </button>
                 </div>
