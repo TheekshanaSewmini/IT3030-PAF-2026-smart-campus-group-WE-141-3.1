@@ -48,7 +48,8 @@ public class SecurityConfig {
                     .requestMatchers(
                             "/auth/**",
                             "/forgotpass/**",
-                            "/login/**"
+                            "/login/**",
+                            "/uploads/**"
                     ).permitAll()
 
                     .anyRequest().authenticated()

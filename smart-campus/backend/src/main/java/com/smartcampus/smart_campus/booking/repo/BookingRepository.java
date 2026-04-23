@@ -53,4 +53,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             @Param("endTime") LocalTime endTime,
             @Param("statuses") Collection<BookingStatus> statuses
     );
+    List<Booking> findByFacilityAssetId(Long facilityAssetId);
+
+    void deleteByFacilityAssetId(Long facilityAssetId);
 }

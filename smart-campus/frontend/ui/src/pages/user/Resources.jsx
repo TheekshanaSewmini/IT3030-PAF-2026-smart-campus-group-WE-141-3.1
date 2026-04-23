@@ -238,7 +238,7 @@ export default function Resources() {
 
                         <div className="modal-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', padding: '1.5rem 2rem' }}>
                             <button className="btn btn-ghost" onClick={() => setShowModal(false)}>Close View</button>
-                            <button className="btn btn-primary" onClick={() => navigate("/booking")} disabled={selectedResource.status !== 'ACTIVE'}>
+                            <button className="btn btn-primary" onClick={() => navigate("/booking", { state: { resourceId: selectedResource.id } })} disabled={selectedResource.status !== 'ACTIVE'}>
                                 {selectedResource.status === 'ACTIVE' ? "Book Now" : "Currently Unavailable"}
                             </button>
                         </div>
