@@ -1488,23 +1488,6 @@ select:focus {
     display: flex;
     align-items: flex-end;
 }
-
-.filter-actions .btn {
-    width: 100%;
-}
-
-/* Results Info */
-.results-info {
-    padding: 1rem;
-    background: rgba(236, 246, 255, 0.5);
-    border-radius: 8px;
-    border-left: 4px solid var(--brand);
-    margin-bottom: 1.5rem;
-}
-
-.results-info p {
-    margin: 0;
-    color: var(--text-main);
     font-weight: 500;
 }
 
@@ -1766,4 +1749,105 @@ select:focus {
 .btn-cancel:hover {
     background: #64748b;
     color: #fff;
+}
+
+/* Modern Modal System */
+.modern-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1.5rem;
+    animation: modalFadeIn 0.2s ease-out;
+}
+
+.modern-modal-content {
+    background: #fff;
+    width: min(800px, 100%);
+    border-radius: 24px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+    animation: modalSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes modalSlideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.modal-header {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 800;
+}
+
+.close-modal-btn {
+    border: none;
+    background: #f1f5f9;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.close-modal-btn:hover {
+    background: #fee2e2;
+    color: #ef4444;
+    transform: rotate(90deg);
+}
+
+.modal-actions {
+    border-top: 1px solid #f1f5f9;
+    padding: 1.5rem 2rem;
+    margin: 0 !important;
+}
+
+/* Redefined Stats for Dashboard */
+.stats-dashboard {
+    margin-bottom: 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
+}
+
+.highlight-admin-card {
+    border: 2px solid rgba(245, 158, 11, 0.2) !important;
+}
+
+.stats-icon--orange {
+    background: #fff7ed;
+    color: #f59e0b;
+}
+
+.management-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.btn-new-booking {
+    padding: 0.6rem 1.5rem;
+    font-size: 0.85rem;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
