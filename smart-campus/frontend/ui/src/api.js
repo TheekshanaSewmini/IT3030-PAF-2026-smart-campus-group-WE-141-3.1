@@ -54,8 +54,10 @@ const processQueue = (error, token = null) => {
 };
 
 api.interceptors.request.use((config) => {
-    // Cookie-based auth is the primary mechanism for this app.
-    // Avoid forcing a potentially stale Bearer token on requests.
+    const token = getStoredAccessToken();
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
 });
 

@@ -25,6 +25,7 @@ import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class BookingServiceImpl implements BookingService {
 
     private static final Set<BookingStatus> BLOCKING_STATUSES = EnumSet.of(
@@ -289,6 +290,10 @@ public class BookingServiceImpl implements BookingService {
 
         if (bookingDate.isBefore(LocalDate.now())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Booking date cannot be in the past");
+        }
+
+        if (bookingDate.isEqual(LocalDate.now()) && startTime.isBefore(LocalTime.now())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Booking start time cannot be in the past for today");
         }
     }
 

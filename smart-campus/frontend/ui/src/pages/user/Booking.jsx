@@ -44,7 +44,10 @@ function formatTime(timeText) {
         return "-";
     }
 
-    const [hours, minutes] = String(timeText).split(":");
+    const parts = Array.isArray(timeText) ? timeText : String(timeText).split(":");
+    const hours = parts[0];
+    const minutes = parts[1];
+
     if (hours === undefined || minutes === undefined) {
         return timeText;
     }
@@ -54,8 +57,16 @@ function formatTime(timeText) {
     return parsed.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-function toMinutes(timeText) {
-    const [hours, minutes] = String(timeText || "").split(":");
+function toMinutes(timeValue) {
+    if (!timeValue) return NaN;
+
+    // Handle array format [HH, mm] or [HH, mm, ss] if Jackson sends it that way
+    if (Array.isArray(timeValue)) {
+        const [h, m] = timeValue;
+        return (Number(h) || 0) * 60 + (Number(m) || 0);
+    }
+
+    const [hours, minutes] = String(timeValue).split(":");
     const hourNumber = Number(hours);
     const minuteNumber = Number(minutes);
 
