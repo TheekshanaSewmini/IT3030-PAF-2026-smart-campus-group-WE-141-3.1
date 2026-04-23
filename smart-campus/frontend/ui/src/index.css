@@ -514,15 +514,17 @@ select {
 }
 
 .stat-icon {
-    font-size: 2rem;
-    width: 60px;
-    height: 60px;
-    background: #fff;
-    border-radius: 16px;
+    font-size: 1.5rem;
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
     display: grid;
     place-items: center;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
 }
+
+.stats-icon--blue { background: #eff6ff; color: #2563eb; }
+.stats-icon--purple { background: #f5f3ff; color: #7c3aed; }
+.stats-icon--green { background: #ecfdf5; color: #10b981; }
 
 .stat-label {
     margin: 0;
@@ -811,6 +813,10 @@ select:focus {
     to {
         transform: rotate(360deg);
     }
+}
+
+.spin {
+    animation: spin 1s linear infinite;
 }
 
 .profile-card {
@@ -1629,4 +1635,135 @@ select:focus {
 .booking-status.cancelled {
     color: #475569;
     background: rgba(148, 163, 184, 0.24);
+}
+
+/* Management Dashboard Refinements */
+.management-section {
+    margin-top: 2.5rem;
+    padding: 2rem;
+    border: 2px solid rgba(37, 99, 235, 0.08);
+}
+
+.tab-group {
+    display: flex;
+    gap: 0.5rem;
+    background: #f1f5f9;
+    padding: 0.35rem;
+    border-radius: 12px;
+}
+
+.tab-btn {
+    border: none;
+    background: transparent;
+    padding: 0.6rem 1.25rem;
+    border-radius: 9px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-soft);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.tab-btn.active {
+    background: #fff;
+    color: var(--brand);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+}
+
+.management-card {
+    background: #fff !important;
+    border: 1px solid var(--line-soft) !important;
+    transition: all 0.2s ease;
+    margin-bottom: 1rem;
+}
+
+.management-card:hover {
+    border-color: var(--brand-soft) !important;
+    box-shadow: var(--shadow-soft) !important;
+}
+
+.card-title-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.user-email-meta {
+    font-size: 0.75rem;
+    color: var(--text-soft);
+    font-weight: 500;
+}
+
+.card-body-meta {
+    margin: 1rem 0;
+    font-size: 0.9rem;
+    display: grid;
+    gap: 0.35rem;
+}
+
+.card-body-meta p {
+    margin: 0;
+}
+
+.description-text {
+    font-style: italic;
+    color: var(--text-soft);
+    padding-left: 0.75rem;
+    border-left: 3px solid var(--line-soft);
+    margin-top: 0.5rem !important;
+}
+
+.management-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid #f1f5f9;
+}
+
+.btn-icon {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.65rem;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-approve {
+    background: #ecfdf5;
+    color: #059669;
+}
+
+.btn-approve:hover {
+    background: #10b981;
+    color: #fff;
+}
+
+.btn-reject {
+    background: #fff1f2;
+    color: #e11d48;
+}
+
+.btn-reject:hover {
+    background: #f43f5e;
+    color: #fff;
+}
+
+.btn-cancel {
+    background: #f8fafc;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+}
+
+.btn-cancel:hover {
+    background: #64748b;
+    color: #fff;
 }

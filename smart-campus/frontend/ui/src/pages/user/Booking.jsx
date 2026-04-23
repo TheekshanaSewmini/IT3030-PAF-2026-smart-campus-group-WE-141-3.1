@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api, { bookingApi, resourceApi } from "../../api";
 import AppNavbar from "../../components/AppNavbar";
+import { HiSearch, HiCheckCircle, HiXCircle, HiClock, HiCheck, HiX, HiTrash, HiClipboardList, HiShieldExclamation } from "react-icons/hi";
 import { normalizeRole } from "../../utils/roleHome";
 
 function getErrorMessage(error, fallback) {
@@ -103,7 +104,8 @@ export default function Booking() {
 
     const [myBookings, setMyBookings] = useState([]);
     const [pendingBookings, setPendingBookings] = useState([]);
-
+    const [allBookings, setAllBookings] = useState([]);
+    const [viewMode, setViewMode] = useState("PE"); // PE or ALL for admin
     const [loadingPage, setLoadingPage] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [checkingAvailability, setCheckingAvailability] = useState(false);
@@ -179,10 +181,15 @@ export default function Booking() {
 
             const normalizedRole = normalizeRole(userProfile?.role) || "USER";
             if (normalizedRole === "ADMIN") {
-                const pendingResponse = await bookingApi.getPending();
+                const [pendingResponse, allResponse] = await Promise.all([
+                    bookingApi.getPending(),
+                    bookingApi.getAll()
+                ]);
                 setPendingBookings(Array.isArray(pendingResponse.data) ? pendingResponse.data : []);
+                setAllBookings(Array.isArray(allResponse.data) ? allResponse.data : []);
             } else {
                 setPendingBookings([]);
+                setAllBookings([]);
             }
         } catch (loadError) {
             const status = loadError.response?.status;
@@ -346,9 +353,12 @@ export default function Booking() {
             if (action === "approve") {
                 await bookingApi.approve(bookingId);
                 setNotice({ type: "success", text: "Booking request approved." });
-            } else {
+            } else if (action === "reject") {
                 await bookingApi.reject(bookingId);
                 setNotice({ type: "success", text: "Booking request rejected." });
+            } else if (action === "cancel") {
+                await bookingApi.cancel(bookingId);
+                setNotice({ type: "success", text: "Booking has been cancelled." });
             }
 
             await loadPageData();
@@ -516,7 +526,7 @@ export default function Booking() {
                                                     key={index} 
                                                     className={`slot-pill ${slot.available ? "available" : "booked"}`}
                                                 >
-                                                    {slot.available ? "🟢" : "🔴"} {formatTime(slot.time)}
+                                                    {slot.available ? <HiCheckCircle /> : <HiXCircle />} {formatTime(slot.time)}
                                                 </span>
                                             ))}
                                         </div>
@@ -530,14 +540,14 @@ export default function Booking() {
                                         onClick={handleCheckAvailability}
                                         disabled={checkingAvailability || !selectedResourceId}
                                     >
-                                        {checkingAvailability ? "⏳ Checking..." : "🔍 Check Availability"}
+                                        {checkingAvailability ? <><HiClock className="spin" /> Checking...</> : <><HiSearch /> Check Availability</>}
                                     </button>
                                     <button
                                         type="submit"
                                         className="btn btn-modern btn-primary-modern"
                                         disabled={submitting}
                                     >
-                                        {submitting ? "⌛ Booking..." : "✅ Submit Booking Request"}
+                                        {submitting ? <><HiClock className="spin" /> Booking...</> : <><HiCheck /> Submit Booking Request</>}
                                     </button>
                                 </div>
                             </form>
@@ -571,50 +581,96 @@ export default function Booking() {
                         </section>
 
                         {isAdmin && (
-                            <section className="section">
-                                <h3>Admin Approval Queue</h3>
-                                {pendingBookings.length > 0 ? (
-                                    <div className="booking-list">
-                                        {pendingBookings.map((booking) => (
-                                            <article key={booking.bookingId} className="booking-card">
-                                                <div className="booking-card__head">
-                                                    <h4>{booking.title}</h4>
-                                                    <span className={statusClass(booking.status)}>{booking.status}</span>
-                                                </div>
-                                                <p className="muted">
-                                                    Requested by {booking.bookedByEmail} | Resource ID{" "}
-                                                    {booking.facilityAssetId || "-"} - {booking.facilityName || "Resource"}
-                                                </p>
-                                                <p className="muted">
-                                                    {formatDate(booking.bookingDate)} | {formatTime(booking.startTime)} -{" "}
-                                                    {formatTime(booking.endTime)}
-                                                </p>
-                                                {booking.description && <p>{booking.description}</p>}
-
-                                                <div className="actions-row">
-                                                    <button
-                                                        className="btn btn-primary"
-                                                        type="button"
-                                                        onClick={() => handleAdminAction(booking.bookingId, "approve")}
-                                                        disabled={actionBookingId === booking.bookingId}
-                                                    >
-                                                        Approve
-                                                    </button>
-                                                    <button
-                                                        className="btn btn-danger"
-                                                        type="button"
-                                                        onClick={() => handleAdminAction(booking.bookingId, "reject")}
-                                                        disabled={actionBookingId === booking.bookingId}
-                                                    >
-                                                        Reject
-                                                    </button>
-                                                </div>
-                                            </article>
-                                        ))}
+                            <section className="section glass-panel management-section">
+                                <div className="section-header">
+                                    <div>
+                                        <h3>Management Dashboard</h3>
+                                        <p className="muted">Review and oversee all campus bookings.</p>
                                     </div>
-                                ) : (
-                                    <p className="text-muted">No pending booking requests.</p>
-                                )}
+                                    <div className="tab-group">
+                                        <button 
+                                            className={`tab-btn ${viewMode === "PE" ? "active" : ""}`}
+                                            onClick={() => setViewMode("PE")}
+                                        >
+                                            <HiShieldExclamation /> Pending ({pendingBookings.length})
+                                        </button>
+                                        <button 
+                                            className={`tab-btn ${viewMode === "ALL" ? "active" : ""}`}
+                                            onClick={() => setViewMode("ALL")}
+                                        >
+                                            <HiClipboardList /> All History ({allBookings.length})
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="management-list">
+                                    {(viewMode === "PE" ? pendingBookings : allBookings).length > 0 ? (
+                                        <div className="booking-list">
+                                            {(viewMode === "PE" ? pendingBookings : allBookings).map((booking) => (
+                                                <article key={booking.bookingId} className="booking-card management-card">
+                                                    <div className="booking-card__head">
+                                                        <div className="card-title-group">
+                                                            <h4>{booking.title}</h4>
+                                                            <span className="user-email-meta">by {booking.bookedByEmail}</span>
+                                                        </div>
+                                                        <span className={`booking-status ${statusClass(booking.status)}`}>
+                                                            {booking.status}
+                                                        </span>
+                                                    </div>
+                                                    
+                                                    <div className="card-body-meta">
+                                                        <p>
+                                                            <strong>Resource:</strong> {booking.facilityName || "ID " + booking.facilityAssetId}
+                                                        </p>
+                                                        <p>
+                                                            <strong>Schedule:</strong> {formatDate(booking.bookingDate)} | {formatTime(booking.startTime)} - {formatTime(booking.endTime)}
+                                                        </p>
+                                                        {booking.description && (
+                                                            <p className="description-text">"{booking.description}"</p>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="management-actions">
+                                                        {booking.status === "PENDING" && (
+                                                            <>
+                                                                <button
+                                                                    className="btn btn-icon btn-approve"
+                                                                    onClick={() => handleAdminAction(booking.bookingId, "approve")}
+                                                                    disabled={actionBookingId === booking.bookingId}
+                                                                    title="Approve"
+                                                                >
+                                                                    <HiCheck /> Approve
+                                                                </button>
+                                                                <button
+                                                                    className="btn btn-icon btn-reject"
+                                                                    onClick={() => handleAdminAction(booking.bookingId, "reject")}
+                                                                    disabled={actionBookingId === booking.bookingId}
+                                                                    title="Reject"
+                                                                >
+                                                                    <HiX /> Reject
+                                                                </button>
+                                                            </>
+                                                        )}
+                                                        {(booking.status === "APPROVED" || booking.status === "REJECTED") && (
+                                                            <button
+                                                                className="btn btn-icon btn-cancel"
+                                                                onClick={() => handleAdminAction(booking.bookingId, "cancel")}
+                                                                disabled={actionBookingId === booking.bookingId}
+                                                                title="Delete/Cancel"
+                                                            >
+                                                                <HiTrash /> Cancel
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </article>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="empty-state">
+                                            <p className="text-muted">No bookings found for the selected view.</p>
+                                        </div>
+                                    )}
+                                </div>
                             </section>
                         )}
                     </>
