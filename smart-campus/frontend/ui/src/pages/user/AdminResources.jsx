@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import api from "../../api";
-import { roleHomePath } from "../../utils/roleHome";
+import { roleHomePath, normalizeRole } from "../../utils/roleHome";
+import AppNavbar from "../../components/AppNavbar";
+import { HiPlus, HiCollection, HiOfficeBuilding, HiUsers, HiLocationMarker, HiClock, HiUpload, HiTrash, HiRefresh, HiCog } from "react-icons/hi";
 
 const FACILITY_TYPES = [
     "LECTURE_HALL",
@@ -12,7 +14,7 @@ const FACILITY_TYPES = [
     "OTHER",
 ];
 
-const FACILITY_STATUSES = ["ACTIVE", "OUT_OF_SERVICE"];
+const FACILITY_STATUSES = ["ACTIVE", "OUT_OF_SERVICE", "MAINTENANCE", "UNAVAILABLE"];
 
 const initialForm = {
     name: "",
@@ -26,28 +28,16 @@ const initialForm = {
 
 function getErrorMessage(error, fallback) {
     const payload = error?.response?.data;
-
-    if (typeof payload === "string" && payload.trim()) {
-        return payload;
-    }
-
-    if (payload?.message) {
-        return payload.message;
-    }
-
+    if (typeof payload === "string" && payload.trim()) return payload;
+    if (payload?.message) return payload.message;
     return fallback;
 }
 
 function buildAssetUrl(path) {
-    if (!path) {
-        return "";
-    }
-
-    if (path.startsWith("http://") || path.startsWith("https://")) {
-        return path;
-    }
-
-    return `${api.defaults.baseURL}${path}`;
+    if (!path) return "";
+    if (path.startsWith("http://") || path.startsWith("https://")) return path;
+    const base = api.defaults.baseURL || "http://localhost:8080";
+    return `${base}${path}`;
 }
 
 function formatEnumLabel(value) {
@@ -61,56 +51,46 @@ function formatEnumLabel(value) {
 export default function AdminResources() {
     const navigate = useNavigate();
 
+    const [profileData, setProfileData] = useState(null);
     const [form, setForm] = useState(initialForm);
     const [imageFile, setImageFile] = useState(null);
     const [previewUrl, setPreviewUrl] = useState("");
-
     const [resources, setResources] = useState([]);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
+    const [updatingId, setUpdatingId] = useState(null);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
+    const [isAddMode, setIsAddMode] = useState(false);
+
+    const loadData = async () => {
+        try {
+            const [adminProfileResponse, resourcesResponse] = await Promise.all([
+                api.get("/user/Admin/me").catch(() => api.get("/user/me")),
+                api.get("/facilities"),
+            ]);
+
+            const role = normalizeRole(adminProfileResponse?.data?.role);
+            if (role !== "ADMIN") {
+                navigate(roleHomePath(adminProfileResponse?.data?.role), { replace: true });
+                return;
+            }
+
+            setProfileData(adminProfileResponse.data);
+            setResources(Array.isArray(resourcesResponse.data) ? resourcesResponse.data : []);
+        } catch (loadError) {
+            const status = loadError.response?.status;
+            if (status === 401) {
+                navigate("/login", { replace: true });
+            } else {
+                setError(getErrorMessage(loadError, "Failed to load management data."));
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const loadData = async () => {
-            try {
-                const [adminProfileResponse, resourcesResponse] = await Promise.all([
-                    api.get("/user/Admin/me"),
-                    api.get("/facilities"),
-                ]);
-
-                const normalizedRole = String(adminProfileResponse?.data?.role || "").replace("ROLE_", "").toUpperCase();
-                if (normalizedRole !== "ADMIN") {
-                    navigate(roleHomePath(adminProfileResponse?.data?.role), { replace: true });
-                    return;
-                }
-
-                setResources(Array.isArray(resourcesResponse.data) ? resourcesResponse.data : []);
-            } catch (loadError) {
-                const status = loadError.response?.status;
-
-                if (status === 401) {
-                    navigate("/login", { replace: true });
-                    return;
-                }
-
-                if (status === 403) {
-                    try {
-                        const profileResponse = await api.get("/user/me");
-                        navigate(roleHomePath(profileResponse.data?.role), { replace: true });
-                        return;
-                    } catch {
-                        navigate("/login", { replace: true });
-                        return;
-                    }
-                }
-
-                setError(getErrorMessage(loadError, "Failed to load resources."));
-            } finally {
-                setLoading(false);
-            }
-        };
-
         loadData();
     }, [navigate]);
 
@@ -119,49 +99,38 @@ export default function AdminResources() {
             setPreviewUrl("");
             return undefined;
         }
-
         const localPreview = URL.createObjectURL(imageFile);
         setPreviewUrl(localPreview);
-
         return () => URL.revokeObjectURL(localPreview);
     }, [imageFile]);
 
     const sortedResources = useMemo(
-        () => [...resources].sort((left, right) => (right.id || 0) - (left.id || 0)),
+        () => [...resources].sort((a, b) => (b.id || 0) - (a.id || 0)),
         [resources]
     );
 
-    const handleChange = (event) => {
-        const { name, value } = event.target;
-        setForm((current) => ({
-            ...current,
-            [name]: value,
-        }));
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setForm(curr => ({ ...curr, [name]: value }));
     };
 
-    const handleFileChange = (event) => {
-        const file = event.target.files?.[0] || null;
+    const handleFileChange = (e) => {
+        const file = e.target.files?.[0] || null;
         setImageFile(file);
     };
 
-    const resetForm = () => {
-        setForm(initialForm);
-        setImageFile(null);
-    };
-
-    const handleSubmit = async (event) => {
-        event.preventDefault();
+    const handleSubmit = async (e) => {
+        e.preventDefault();
         setError("");
         setSuccess("");
 
         if (!imageFile) {
-            setError("Please upload a resource image.");
+            setError("Resource image is required for cataloging.");
             return;
         }
 
         try {
             setSubmitting(true);
-
             const payload = {
                 ...form,
                 capacity: Number(form.capacity),
@@ -170,33 +139,45 @@ export default function AdminResources() {
             };
 
             const formData = new FormData();
-            formData.append(
-                "resource",
-                new Blob([JSON.stringify(payload)], { type: "application/json" })
-            );
+            formData.append("resource", new Blob([JSON.stringify(payload)], { type: "application/json" }));
             formData.append("image", imageFile);
 
             const response = await api.post("/facilities", formData, {
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                },
+                headers: { "Content-Type": "multipart/form-data" },
             });
 
-            setResources((current) => [response.data, ...current]);
-            setSuccess("Resource created successfully.");
-            resetForm();
-        } catch (submitError) {
-            setError(getErrorMessage(submitError, "Failed to create resource."));
+            setResources(curr => [response.data, ...curr]);
+            setSuccess("Resource cataloged successfully!");
+            setForm(initialForm);
+            setImageFile(null);
+            setIsAddMode(false);
+        } catch (err) {
+            setError(getErrorMessage(err, "Creation failed."));
         } finally {
             setSubmitting(false);
         }
     };
 
-    const handleLogout = async () => {
+    const handleStatusChange = async (id, newStatus) => {
         try {
-            await api.post("/auth/logout");
+            setUpdatingId(id);
+            await api.patch(`/facilities/${id}/status`, null, { params: { status: newStatus } });
+            setResources(curr => curr.map(r => r.id === id ? { ...r, status: newStatus } : r));
+            setSuccess(`Status updated to ${formatEnumLabel(newStatus)}`);
+        } catch (err) {
+            setError("Failed to update status.");
         } finally {
-            navigate("/login", { replace: true });
+            setUpdatingId(null);
+        }
+    };
+
+    const handleRemove = async (id) => {
+        if (!window.confirm("Permanently remove this resource?")) return;
+        try {
+            await api.delete(`/facilities/${id}`);
+            setResources(curr => curr.filter(r => r.id !== id));
+        } catch (err) {
+            setError("Could not delete resource.");
         }
     };
 
@@ -204,170 +185,192 @@ export default function AdminResources() {
         return (
             <div className="loading-center">
                 <div className="spinner" />
-                <p>Loading admin resources...</p>
+                <p>Establishing secure connection...</p>
             </div>
         );
     }
 
+    const getStatusColor = (status) => {
+        switch(status) {
+            case 'ACTIVE': return '#059669';
+            case 'MAINTENANCE': return '#f59e0b';
+            case 'UNAVAILABLE': return '#dc2626';
+            case 'OUT_OF_SERVICE': return '#4b5563';
+            default: return '#6b7280';
+        }
+    };
+
     return (
         <div className="page-shell">
             <div className="bg-layer bg-user" />
-            <div className="panel page-panel">
-                <header className="top-nav">
-                    <div>
-                        <h1 className="brand">Catalog Resources</h1>
-                        <p className="subtitle">Admin can add resources with real image uploads.</p>
+            <div className="panel page-panel admin-resource-panel">
+                <AppNavbar 
+                    title="Resource Catalog" 
+                    subtitle="Management terminal for campus assets." 
+                    profile={profileData}
+                />
+
+                <main className="dashboard-content" style={{ padding: '0 1.5rem 2.5rem' }}>
+                    {error && <div className="message error glass-alert">{error}</div>}
+                    {success && <div className="message success glass-alert">{success}</div>}
+
+                    {/* Stats Summary */}
+                    <div className="stats-row" style={{ marginBottom: '2rem' }}>
+                        <article className="stat-card glass-card">
+                            <div className="stat-icon stats-icon--blue"><HiCollection /></div>
+                            <div className="stat-info">
+                                <h4 className="stat-label">Total Assets</h4>
+                                <p className="stat-value">{resources.length}</p>
+                            </div>
+                        </article>
+                        <article className="stat-card glass-card">
+                            <div className="stat-icon stats-icon--green"><HiOfficeBuilding /></div>
+                            <div className="stat-info">
+                                <h4 className="stat-label">Active Sites</h4>
+                                <p className="stat-value">{resources.filter(r => r.status === 'ACTIVE').length}</p>
+                            </div>
+                        </article>
+                        <article className="stat-card glass-card">
+                            <div className="stat-icon stats-icon--purple" onClick={() => loadData()} style={{ cursor: 'pointer' }}><HiRefresh /></div>
+                            <div className="stat-info">
+                                <h4 className="stat-label">Service Desk</h4>
+                                <p className="stat-value">Online</p>
+                            </div>
+                        </article>
                     </div>
 
-                    <div className="nav-group">
-                        <Link className="nav-link" to="/dashboard">Dashboard</Link>
-                        <Link className="nav-link" to="/resources">Browse Resources</Link>
-                        <Link className="nav-link" to="/admin/resources">Manage Resources</Link>
-                        <Link className="nav-link" to="/profile">Profile</Link>
-                        <button className="btn btn-danger" type="button" onClick={handleLogout}>
-                            Logout
+                    <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                        <div>
+                            <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800 }}>Campus Inventory</h3>
+                            <p className="muted" style={{ margin: '0.2rem 0 0' }}>Manage asset lifecycle and availability.</p>
+                        </div>
+                        <button 
+                            className={`btn ${isAddMode ? 'btn-ghost' : 'btn-primary'}`} 
+                            onClick={() => setIsAddMode(!isAddMode)}
+                            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                        >
+                            {isAddMode ? <HiRefresh /> : <HiPlus />}
+                            {isAddMode ? "Cancel Entry" : "New Resource"}
                         </button>
                     </div>
-                </header>
 
-                {error && <p className="message error">{error}</p>}
-                {success && <p className="message success">{success}</p>}
-
-                <section className="section">
-                    <h3>Add Resource</h3>
-                    <form className="form-grid" onSubmit={handleSubmit}>
-                        <div className="resource-grid">
-                            <label className="field">
-                                <span>Resource Name</span>
-                                <input
-                                    name="name"
-                                    value={form.name}
-                                    onChange={handleChange}
-                                    placeholder="Main Lecture Hall"
-                                    required
-                                />
-                            </label>
-
-                            <label className="field">
-                                <span>Type</span>
-                                <select name="type" value={form.type} onChange={handleChange}>
-                                    {FACILITY_TYPES.map((type) => (
-                                        <option key={type} value={type}>
-                                            {formatEnumLabel(type)}
-                                        </option>
-                                    ))}
-                                </select>
-                            </label>
-
-                            <label className="field">
-                                <span>Capacity</span>
-                                <input
-                                    name="capacity"
-                                    type="number"
-                                    min="1"
-                                    value={form.capacity}
-                                    onChange={handleChange}
-                                    required
-                                />
-                            </label>
-
-                            <label className="field">
-                                <span>Location</span>
-                                <input
-                                    name="location"
-                                    value={form.location}
-                                    onChange={handleChange}
-                                    placeholder="Block B - Floor 2"
-                                    required
-                                />
-                            </label>
-
-                            <label className="field">
-                                <span>Available From</span>
-                                <input
-                                    name="availableFrom"
-                                    type="time"
-                                    value={form.availableFrom}
-                                    onChange={handleChange}
-                                    required
-                                />
-                            </label>
-
-                            <label className="field">
-                                <span>Available To</span>
-                                <input
-                                    name="availableTo"
-                                    type="time"
-                                    value={form.availableTo}
-                                    onChange={handleChange}
-                                    required
-                                />
-                            </label>
-
-                            <label className="field">
-                                <span>Status</span>
-                                <select name="status" value={form.status} onChange={handleChange}>
-                                    {FACILITY_STATUSES.map((status) => (
-                                        <option key={status} value={status}>
-                                            {formatEnumLabel(status)}
-                                        </option>
-                                    ))}
-                                </select>
-                            </label>
-
-                            <label className="field">
-                                <span>Resource Image</span>
-                                <input
-                                    className="file-input"
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleFileChange}
-                                    required
-                                />
-                            </label>
-                        </div>
-
-                        {previewUrl && (
-                            <div className="resource-preview">
-                                <img src={previewUrl} alt="Resource preview" />
-                            </div>
-                        )}
-
-                        <div className="actions-row">
-                            <button className="btn btn-primary" type="submit" disabled={submitting}>
-                                {submitting ? "Saving..." : "Create Resource"}
-                            </button>
-                            <button className="btn btn-ghost" type="button" onClick={resetForm} disabled={submitting}>
-                                Clear
-                            </button>
-                        </div>
-                    </form>
-                </section>
-
-                <section className="section">
-                    <h3>Current Resources</h3>
-                    <div className="resource-cards">
-                        {sortedResources.length === 0 && <p className="muted">No resources yet.</p>}
-
-                        {sortedResources.map((item) => (
-                            <article className="resource-card" key={item.id}>
-                                <div className="resource-image">
-                                    {item.imageUrl ? (
-                                        <img src={buildAssetUrl(item.imageUrl)} alt={item.name} />
-                                    ) : (
-                                        <div className="resource-image-fallback">No Image</div>
-                                    )}
+                    {isAddMode && (
+                        <section className="glass-panel" style={{ padding: '2rem', marginBottom: '2.5rem', border: '2px solid var(--brand-soft)' }}>
+                            <h4 style={{ marginTop: 0, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--brand)' }}>
+                                <HiPlus /> Create New Inventory Entry
+                            </h4>
+                            <form className="form-grid" onSubmit={handleSubmit}>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem' }}>
+                                    <div className="form-group">
+                                        <span>Resource Name</span>
+                                        <input name="name" value={form.name} onChange={handleChange} placeholder="e.g. Einstein Lab" required />
+                                    </div>
+                                    <div className="form-group">
+                                        <span>Type</span>
+                                        <select name="type" value={form.type} onChange={handleChange}>
+                                            {FACILITY_TYPES.map(t => <option key={t} value={t}>{formatEnumLabel(t)}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="form-group">
+                                        <span>Capacity</span>
+                                        <input name="capacity" type="number" min="1" value={form.capacity} onChange={handleChange} required />
+                                    </div>
+                                    <div className="form-group">
+                                        <span>Location</span>
+                                        <input name="location" value={form.location} onChange={handleChange} placeholder="Block C, Room 102" required />
+                                    </div>
+                                    <div className="form-group">
+                                        <span>From</span>
+                                        <input name="availableFrom" type="time" value={form.availableFrom} onChange={handleChange} required />
+                                    </div>
+                                    <div className="form-group">
+                                        <span>To</span>
+                                        <input name="availableTo" type="time" value={form.availableTo} onChange={handleChange} required />
+                                    </div>
+                                    <div className="form-group">
+                                        <span>Status</span>
+                                        <select name="status" value={form.status} onChange={handleChange}>
+                                            {FACILITY_STATUSES.map(s => <option key={s} value={s}>{formatEnumLabel(s)}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="form-group">
+                                        <span>Image Asset</span>
+                                        <label className="custom-file-upload" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.7rem', border: '1px dashed var(--line-soft)', borderRadius: '12px', cursor: 'pointer', background: '#fff' }}>
+                                            <HiUpload /> {imageFile ? imageFile.name : "Choose File"}
+                                            <input type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} required />
+                                        </label>
+                                    </div>
                                 </div>
-                                <div className="resource-body">
-                                    <h4>{item.name}</h4>
-                                    <p>{formatEnumLabel(item.type)} • {item.capacity} seats</p>
-                                    <p>{item.location}</p>
-                                    <span className="chip">{formatEnumLabel(item.status)}</span>
+
+                                {previewUrl && (
+                                    <div style={{ marginTop: '1.5rem', width: '200px', height: '120px', borderRadius: '12px', overflow: 'hidden', border: '2px solid var(--brand-soft)' }}>
+                                        <img src={previewUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    </div>
+                                )}
+
+                                <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem' }}>
+                                    <button className="btn btn-primary" type="submit" disabled={submitting}>
+                                        {submitting ? "Sycnrhonizing..." : "Finalize Record"}
+                                    </button>
+                                    <button className="btn btn-ghost" type="button" onClick={() => setIsAddMode(false)}>Cancel</button>
+                                </div>
+                            </form>
+                        </section>
+                    )}
+
+                    <div className="resource-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 420px))', gap: '1.5rem', justifyContent: 'flex-start' }}>
+                        {sortedResources.map(res => (
+                            <article key={res.id} className="resource-card glass-card" style={{ maxWidth: '420px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                                <div style={{ height: '180px', position: 'relative' }}>
+                                    {res.imageUrl ? (
+                                        <img src={buildAssetUrl(res.imageUrl)} alt={res.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    ) : (
+                                        <div style={{ width: '100%', height: '100%', background: '#cbd5e1', display: 'grid', placeItems: 'center' }}>No Image</div>
+                                    )}
+                                    <div style={{ position: 'absolute', top: '1rem', right: '1rem', background: '#fff', padding: '0.3rem 0.8rem', borderRadius: '999px', fontSize: '0.7rem', fontWeight: 800, color: getStatusColor(res.status), border: `1px solid ${getStatusColor(res.status)}`, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+                                        {formatEnumLabel(res.status)}
+                                    </div>
+                                </div>
+                                <div style={{ padding: '1.25rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                    <span style={{ fontSize: '0.7rem', color: 'var(--brand)', fontWeight: 750, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                        {formatEnumLabel(res.type)}
+                                    </span>
+                                    <h4 style={{ margin: '0.4rem 0', fontSize: '1.1rem', fontWeight: 800 }}>{res.name}</h4>
+                                    
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', fontSize: '0.8rem', color: '#64748b', marginBottom: '1.25rem' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><HiUsers /> {res.capacity} Seats</div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><HiLocationMarker /> {res.location}</div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', gridColumn: 'span 2' }}><HiClock /> {res.availableFrom?.slice(0, 5)} - {res.availableTo?.slice(0, 5)}</div>
+                                    </div>
+
+                                    <div style={{ marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid var(--line-soft)' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                <HiCog style={{ color: 'var(--text-soft)' }} />
+                                                <select 
+                                                    value={res.status} 
+                                                    onChange={(e) => handleStatusChange(res.id, e.target.value)}
+                                                    disabled={updatingId === res.id}
+                                                    style={{ fontSize: '0.8rem', padding: '0.4rem', borderRadius: '8px', border: '1px solid var(--line-soft)', background: '#f8fafc', flex: 1 }}
+                                                >
+                                                    {FACILITY_STATUSES.map(s => <option key={s} value={s}>{formatEnumLabel(s)}</option>)}
+                                                </select>
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                                <button 
+                                                    onClick={() => handleRemove(res.id)}
+                                                    style={{ border: 'none', background: 'transparent', color: '#ef4444', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600 }}
+                                                >
+                                                    <HiTrash /> Remove
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </article>
                         ))}
                     </div>
-                </section>
+                </main>
             </div>
         </div>
     );

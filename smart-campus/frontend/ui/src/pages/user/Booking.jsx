@@ -2,623 +2,319 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api, { bookingApi, resourceApi } from "../../api";
 import AppNavbar from "../../components/AppNavbar";
+import { HiSearch, HiCheckCircle, HiXCircle, HiClock, HiCheck, HiX, HiTrash, HiClipboardList, HiShieldExclamation, HiBell, HiCalendar, HiPlus, HiAcademicCap } from "react-icons/hi";
 import { normalizeRole } from "../../utils/roleHome";
 
 function getErrorMessage(error, fallback) {
     const payload = error?.response?.data;
-
-    if (typeof payload === "string" && payload.trim()) {
-        return payload;
-    }
-
-    if (payload?.message) {
-        return payload.message;
-    }
-
-    // Try to get error message from nested structures
-    if (payload?.error) {
-        return payload.error;
-    }
-
-    // Log the full error for debugging
-    console.error("API Error Details:", {
-        status: error?.response?.status,
-        data: payload,
-        config: error?.config
-    });
-
+    if (typeof payload === "string" && payload.trim()) return payload;
+    if (payload?.message) return payload.message;
     return fallback;
 }
 
-function formatDate(dateText) {
-    if (!dateText) {
-        return "-";
-    }
-
-    const parsed = new Date(`${dateText}T00:00:00`);
-    return Number.isNaN(parsed.getTime()) ? dateText : parsed.toLocaleDateString();
+function safeFormatDate(dateText) {
+    try {
+        if (!dateText) return "-";
+        const parsed = new Date(`${dateText}T00:00:00`);
+        return parsed.toLocaleDateString();
+    } catch { return String(dateText); }
 }
 
-function formatTime(timeText) {
-    if (!timeText) {
-        return "-";
-    }
-
-    const parts = Array.isArray(timeText) ? timeText : String(timeText).split(":");
-    const hours = parts[0];
-    const minutes = parts[1];
-
-    if (hours === undefined || minutes === undefined) {
-        return timeText;
-    }
-
-    const parsed = new Date();
-    parsed.setHours(Number(hours), Number(minutes), 0, 0);
-    return parsed.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-}
-
-function toMinutes(timeValue) {
-    if (!timeValue) return NaN;
-
-    // Handle array format [HH, mm] or [HH, mm, ss] if Jackson sends it that way
-    if (Array.isArray(timeValue)) {
-        const [h, m] = timeValue;
-        return (Number(h) || 0) * 60 + (Number(m) || 0);
-    }
-
-    const [hours, minutes] = String(timeValue).split(":");
-    const hourNumber = Number(hours);
-    const minuteNumber = Number(minutes);
-
-    if (Number.isNaN(hourNumber) || Number.isNaN(minuteNumber)) {
-        return NaN;
-    }
-
-    return hourNumber * 60 + minuteNumber;
-}
-
-function hasOverlap(slotAStart, slotAEnd, slotBStart, slotBEnd) {
-    return slotAStart < slotBEnd && slotAEnd > slotBStart;
+function safeFormatTime(timeText) {
+    try {
+        if (!timeText) return "-";
+        const parts = Array.isArray(timeText) ? timeText : String(timeText).split(":");
+        const h = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10);
+        if (isNaN(h) || isNaN(m)) return String(timeText);
+        const d = new Date();
+        d.setHours(h, m, 0, 0);
+        return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    } catch { return String(timeText); }
 }
 
 function statusClass(status) {
     return `status-badge booking-status ${(status || "").toLowerCase()}`;
 }
 
-const initialForm = {
-    title: "",
-    description: "",
-    bookingDate: "",
-    startTime: "",
-    endTime: "",
-};
-
 export default function Booking() {
     const navigate = useNavigate();
 
+    // Data State
     const [profileData, setProfileData] = useState(null);
     const [resources, setResources] = useState([]);
-    const [selectedResourceId, setSelectedResourceId] = useState("");
-    const [resourceAvailability, setResourceAvailability] = useState(null);
-
     const [myBookings, setMyBookings] = useState([]);
     const [pendingBookings, setPendingBookings] = useState([]);
-
-    const [loadingPage, setLoadingPage] = useState(true);
-    const [submitting, setSubmitting] = useState(false);
-    const [checkingAvailability, setCheckingAvailability] = useState(false);
-    const [actionBookingId, setActionBookingId] = useState(null);
-
-    const [form, setForm] = useState(initialForm);
+    const [allBookings, setAllBookings] = useState([]);
+    
+    // UI State
+    const [loading, setLoading] = useState(true);
+    const [isFormOpen, setIsFormOpen] = useState(false);
+    const [viewMode, setViewMode] = useState("PE");
     const [error, setError] = useState("");
     const [notice, setNotice] = useState({ type: "", text: "" });
 
-    const roleLabel = normalizeRole(profileData?.role) || "USER";
+    // New Booking Flow State
+    const [selectedResourceId, setSelectedResourceId] = useState("");
+    const [bookingDate, setBookingDate] = useState(new Date().toISOString().slice(0, 10));
+    const [checkingAvailability, setCheckingAvailability] = useState(false);
+    const [resourceAvailability, setResourceAvailability] = useState(null);
+    const [selectedSlot, setSelectedSlot] = useState(null);
+    const [bookingTitle, setBookingTitle] = useState("");
+    const [submitting, setSubmitting] = useState(false);
+
+    const roleLabel = useMemo(() => normalizeRole(profileData?.role) || "USER", [profileData]);
     const isAdmin = roleLabel === "ADMIN";
 
-    const stats = useMemo(() => {
-        const today = new Date().toISOString().slice(0, 10);
-        const pendingCount = myBookings.filter((item) => item.status === "PENDING").length;
-        const approvedCount = myBookings.filter((item) => item.status === "APPROVED").length;
-        const todayApproved = myBookings.filter(
-            (item) => item.status === "APPROVED" && item.bookingDate === today
-        ).length;
-
-        return { pendingCount, approvedCount, todayApproved };
-    }, [myBookings]);
-
-    const activeResources = useMemo(
-        () => resources.filter((resource) => resource.status === "ACTIVE"),
-        [resources]
-    );
-
-    const handleLogout = async () => {
+    const loadData = async () => {
         try {
-            await api.post("/auth/logout");
-        } finally {
-            navigate("/login", { replace: true });
-        }
-    };
-
-    const loadResourceAvailability = async (facilityAssetId, bookingDate) => {
-        if (!facilityAssetId || !bookingDate) {
-            setResourceAvailability(null);
-            return null;
-        }
-
-        const response = await bookingApi.getResourceAvailability(facilityAssetId, { bookingDate });
-        setResourceAvailability(response.data);
-        return response.data;
-    };
-
-    const loadPageData = async () => {
-        setLoadingPage(true);
-        setError("");
-
-        try {
-            const [profileResponse, myBookingsResponse, resourcesResponse] = await Promise.all([
-                api.get("/user/me"),
-                bookingApi.getMy(),
-                resourceApi.getAll(),
+            setLoading(true);
+            const [p, m, r] = await Promise.all([
+                api.get("/user/me"), 
+                bookingApi.getMy(), 
+                resourceApi.getAll()
             ]);
+            
+            setProfileData(p.data);
+            setMyBookings(Array.isArray(m.data) ? m.data : []);
+            setResources(Array.isArray(r.data) ? r.data : []);
 
-            const userProfile = profileResponse.data;
-            const resourcesData = Array.isArray(resourcesResponse.data) ? resourcesResponse.data : [];
-            const sortedResources = [...resourcesData].sort((a, b) => Number(a.id) - Number(b.id));
-
-            setProfileData(userProfile);
-            setMyBookings(Array.isArray(myBookingsResponse.data) ? myBookingsResponse.data : []);
-            setResources(sortedResources);
-
-            if (!selectedResourceId) {
-                const firstActiveResource = sortedResources.find((resource) => resource.status === "ACTIVE");
-                if (firstActiveResource) {
-                    setSelectedResourceId(String(firstActiveResource.id));
-                }
+            if (normalizeRole(p.data?.role) === "ADMIN") {
+                const [pn, al] = await Promise.all([bookingApi.getPending(), bookingApi.getAll()]);
+                setPendingBookings(Array.isArray(pn.data) ? pn.data : []);
+                setAllBookings(Array.isArray(al.data) ? al.data : []);
             }
-
-            const normalizedRole = normalizeRole(userProfile?.role) || "USER";
-            if (normalizedRole === "ADMIN") {
-                const pendingResponse = await bookingApi.getPending();
-                setPendingBookings(Array.isArray(pendingResponse.data) ? pendingResponse.data : []);
-            } else {
-                setPendingBookings([]);
-            }
-        } catch (loadError) {
-            const status = loadError.response?.status;
-            if (status === 401) {
-                navigate("/login", { replace: true });
-                return;
-            }
-
-            setError(getErrorMessage(loadError, "Failed to load booking page."));
+        } catch (err) {
+            if (err.response?.status === 401) navigate("/login");
+            else setError("Failed to connect to booking infrastructure.");
         } finally {
-            setLoadingPage(false);
+            setLoading(false);
         }
     };
 
-    useEffect(() => {
-        loadPageData();
-    }, []);
+    useEffect(() => { loadData(); }, []);
 
-    const handleChange = (event) => {
-        const { name, value } = event.target;
-        setForm((current) => ({ ...current, [name]: value }));
-    };
-
+    // Availability Check Logic
     const handleCheckAvailability = async () => {
-        setNotice({ type: "", text: "" });
-
-        if (!selectedResourceId) {
-            setNotice({ type: "error", text: "Please select a resource ID." });
+        if (!selectedResourceId || !bookingDate) {
+            setNotice({ type: "error", text: "Please select both resource and date." });
             return;
         }
-
-        if (!form.bookingDate || !form.startTime || !form.endTime) {
-            setNotice({ type: "error", text: "Please fill date, start time, and end time." });
-            return;
-        }
-
-        const requestStart = toMinutes(form.startTime);
-        const requestEnd = toMinutes(form.endTime);
-
-        if (!Number.isFinite(requestStart) || !Number.isFinite(requestEnd) || requestEnd <= requestStart) {
-            setNotice({ type: "error", text: "End time must be greater than start time." });
-            return;
-        }
-
-        setCheckingAvailability(true);
         try {
-            const availability = await loadResourceAvailability(Number(selectedResourceId), form.bookingDate);
-            if (!availability) {
-                setNotice({ type: "error", text: "Could not read resource availability." });
-                return;
-            }
-
-            const windowStart = toMinutes(availability.availableFrom);
-            const windowEnd = toMinutes(availability.availableTo);
-
-            if (requestStart < windowStart || requestEnd > windowEnd) {
-                setNotice({
-                    type: "error",
-                    text: `Selected resource is available only from ${formatTime(availability.availableFrom)} to ${formatTime(availability.availableTo)}.`,
-                });
-                return;
-            }
-
-            const conflict = (availability.bookedSlots || []).find((slot) => {
-                const slotStart = toMinutes(slot.startTime);
-                const slotEnd = toMinutes(slot.endTime);
-                return hasOverlap(requestStart, requestEnd, slotStart, slotEnd);
-            });
-
-            if (conflict) {
-                setNotice({
-                    type: "error",
-                    text: `Selected time overlaps an existing booking (${formatTime(conflict.startTime)} - ${formatTime(conflict.endTime)}).`,
-                });
-                return;
-            }
-
-            setNotice({
-                type: "success",
-                text: `Resource ID ${selectedResourceId} is available for selected time slot.`,
-            });
-        } catch (availabilityError) {
-            if (availabilityError?.response?.status === 401) {
-                navigate("/login", { replace: true });
-                return;
-            }
-
-            setResourceAvailability(null);
-            setNotice({
-                type: "error",
-                text: getErrorMessage(availabilityError, "Failed to check availability."),
-            });
+            setCheckingAvailability(true);
+            const resp = await bookingApi.getResourceAvailability(selectedResourceId, { bookingDate });
+            setResourceAvailability(resp.data);
+            setSelectedSlot(null);
+        } catch (err) {
+            setNotice({ type: "error", text: "Availability check failed." });
         } finally {
             setCheckingAvailability(false);
         }
     };
 
-    const handleCreateBooking = async (event) => {
-        event.preventDefault();
-        setNotice({ type: "", text: "" });
-
-        if (!selectedResourceId) {
-            setNotice({ type: "error", text: "Please select a resource ID." });
-            return;
-        }
-
-        if (!form.title.trim()) {
-            setNotice({ type: "error", text: "Booking title is required." });
-            return;
-        }
-
-        if (!form.bookingDate || !form.startTime || !form.endTime) {
-            setNotice({ type: "error", text: "Please fill date and time fields." });
-            return;
-        }
-
-        setSubmitting(true);
+    const handleCreateBooking = async () => {
+        if (!selectedSlot || !bookingTitle) return;
         try {
-            const bookingPayload = {
-                title: form.title.trim(),
-                description: form.description.trim() || null,
+            setSubmitting(true);
+            await bookingApi.create({
                 facilityAssetId: Number(selectedResourceId),
-                bookingDate: form.bookingDate,
-                startTime: form.startTime,
-                endTime: form.endTime,
-            };
-
-            console.log("Submitting booking with payload:", bookingPayload);
-
-            await bookingApi.create(bookingPayload);
-
-            setNotice({
-                type: "success",
-                text: `Booking request submitted for Resource ID ${selectedResourceId}. Status: PENDING.`,
+                title: bookingTitle,
+                bookingDate,
+                startTime: selectedSlot.startTime,
+                endTime: selectedSlot.endTime,
             });
-            setForm((current) => ({ ...current, title: "", description: "" }));
-            await loadPageData();
-            await loadResourceAvailability(Number(selectedResourceId), form.bookingDate);
-        } catch (submitError) {
-            if (submitError?.response?.status === 401) {
-                navigate("/login", { replace: true });
-                return;
-            }
-
-            const errorMsg = getErrorMessage(submitError, "Failed to submit booking request.");
-            console.error("Booking creation error:", submitError);
-            setNotice({
-                type: "error",
-                text: errorMsg,
-            });
+            setNotice({ type: "success", text: "Reservation queued successfully!" });
+            setIsFormOpen(false);
+            loadData();
+        } catch (err) {
+            setNotice({ type: "error", text: getErrorMessage(err, "Reservation failed.") });
         } finally {
             setSubmitting(false);
         }
     };
 
-    const handleAdminAction = async (bookingId, action) => {
-        setNotice({ type: "", text: "" });
-        setActionBookingId(bookingId);
-
+    const handleAdminAction = async (id, action) => {
         try {
-            if (action === "approve") {
-                await bookingApi.approve(bookingId);
-                setNotice({ type: "success", text: "Booking request approved." });
-            } else {
-                await bookingApi.reject(bookingId);
-                setNotice({ type: "success", text: "Booking request rejected." });
-            }
-
-            await loadPageData();
-        } catch (actionError) {
-            if (actionError?.response?.status === 401) {
-                navigate("/login", { replace: true });
-                return;
-            }
-
-            setNotice({
-                type: "error",
-                text: getErrorMessage(actionError, "Failed to update booking request."),
-            });
-        } finally {
-            setActionBookingId(null);
+            if (action === "approve") await bookingApi.approve(id);
+            if (action === "reject") await bookingApi.reject(id);
+            if (action === "cancel") await bookingApi.cancel(id);
+            loadData();
+        } catch (err) {
+            setNotice({ type: "error", text: "Action unauthorized or failed." });
         }
     };
 
-    if (loadingPage) {
-        return (
-            <div className="loading-center">
-                <div className="spinner" />
-                <p>Loading booking page...</p>
-            </div>
-        );
-    }
+    if (loading) return <div className="loading-center"><div className="spinner" /></div>;
+
+    const stats = {
+        pending: isAdmin ? pendingBookings.length : myBookings.filter(b => b.status === 'PENDING').length,
+        approved: isAdmin ? allBookings.filter(b => b.status === 'APPROVED').length : myBookings.filter(b => b.status === 'APPROVED').length,
+        total: isAdmin ? allBookings.length : myBookings.length
+    };
 
     return (
         <div className="page-shell">
             <div className="bg-layer bg-user" />
             <div className="panel page-panel">
-                <AppNavbar
-                    title="Booking"
-                    subtitle="Select resource ID and submit booking requests."
-                    profile={profileData}
-                    onLogout={handleLogout}
-                />
+                <AppNavbar title="Reservations" subtitle="Secure your campus resource allocations." profile={profileData} />
 
-                {error && <p className="message error">{error}</p>}
-                {notice.text && <p className={`message ${notice.type}`}>{notice.text}</p>}
+                <main className="dashboard-content" style={{ padding: '0 1.5rem 2.5rem' }}>
+                    {error && <div className="message error glass-alert">{error}</div>}
+                    {notice.text && <div className={`message ${notice.type} glass-alert`}>{notice.text}</div>}
 
-                {!error && (
-                    <>
-                        <div className="stats">
-                            <article className="stat-card">
-                                <h3>My Pending</h3>
-                                <p className="value">{stats.pendingCount}</p>
-                            </article>
-                            <article className="stat-card">
-                                <h3>My Approved</h3>
-                                <p className="value">{stats.approvedCount}</p>
-                            </article>
-                            <article className="stat-card">
-                                <h3>Today Approved</h3>
-                                <p className="value">{stats.todayApproved}</p>
-                            </article>
-                            {isAdmin && (
-                                <article className="stat-card">
-                                    <h3>Need Approval</h3>
-                                    <p className="value">{pendingBookings.length}</p>
+                    {/* Quick Stats Grid */}
+                    <div className="stats-dashboard" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+                        <div className="stat-card glass-card">
+                            <div className="stat-icon stats-icon--blue"><HiBell /></div>
+                            <div className="stat-info">
+                                <h4 className="stat-label">Action Required</h4>
+                                <p className="stat-value">{stats.pending}</p>
+                            </div>
+                        </div>
+                        <div className="stat-card glass-card">
+                            <div className="stat-icon stats-icon--green"><HiCheckCircle /></div>
+                            <div className="stat-info">
+                                <h4 className="stat-label">Confirmed</h4>
+                                <p className="stat-value">{stats.approved}</p>
+                            </div>
+                        </div>
+                        <div className="stat-card glass-card">
+                            <div className="stat-icon stats-icon--purple"><HiClipboardList /></div>
+                            <div className="stat-info">
+                                <h4 className="stat-label">System Load</h4>
+                                <p className="stat-value">Stable</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Workspace Control Section */}
+                    <section className="glass-panel" style={{ padding: '2rem', background: 'rgba(255,255,255,0.7)', borderRadius: '24px' }}>
+                        <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                            <div>
+                                <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800 }}>
+                                    {isAdmin ? "Management Terminal" : "My Reservation Log"}
+                                </h3>
+                                <p className="muted" style={{ margin: '0.2rem 0 0' }}>Track and manage your institutional resource access.</p>
+                            </div>
+                            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                {isAdmin && (
+                                    <div className="tab-group" style={{ background: '#f1f5f9', padding: '0.35rem', borderRadius: '12px', display: 'flex', gap: '0.5rem' }}>
+                                        <button className={`tab-btn ${viewMode === 'PE' ? 'active' : ''}`} onClick={() => setViewMode('PE')} style={{ border: 'none', padding: '0.5rem 1rem', borderRadius: '9px', fontWeight: 700, cursor: 'pointer', background: viewMode === 'PE' ? '#fff' : 'transparent', boxShadow: viewMode === 'PE' ? '0 4px 10px rgba(0,0,0,0.05)' : 'none' }}>Active</button>
+                                        <button className={`tab-btn ${viewMode === 'ALL' ? 'active' : ''}`} onClick={() => setViewMode('ALL')} style={{ border: 'none', padding: '0.5rem 1rem', borderRadius: '9px', fontWeight: 700, cursor: 'pointer', background: viewMode === 'ALL' ? '#fff' : 'transparent', boxShadow: viewMode === 'ALL' ? '0 4px 10px rgba(0,0,0,0.05)' : 'none' }}>History</button>
+                                    </div>
+                                )}
+                                <button className="btn btn-primary" onClick={() => setIsFormOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <HiPlus /> New Request
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="booking-list" style={{ display: 'grid', gap: '1rem' }}>
+                            {(isAdmin ? (viewMode === 'PE' ? pendingBookings : allBookings) : myBookings).map(b => (
+                                <article key={b.bookingId} className="booking-card glass-card" style={{ padding: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid var(--line-soft)' }}>
+                                    <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
+                                        <div style={{ padding: '0.75rem', background: 'var(--brand-soft)', color: 'var(--brand)', borderRadius: '12px' }}><HiCalendar size={20} /></div>
+                                        <div>
+                                            <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800 }}>{b.title}</h4>
+                                            <p className="muted" style={{ margin: '0.2rem 0 0', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                <HiAcademicCap /> {b.facilityName} | <HiClock /> {safeFormatDate(b.bookingDate)} • {safeFormatTime(b.startTime)}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                                        <span className={statusClass(b.status)}>{b.status}</span>
+                                        {isAdmin && b.status === 'PENDING' && (
+                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                <button className="icon-btn-success" onClick={() => handleAdminAction(b.bookingId, 'approve')} style={{ background: '#ecfdf5', color: '#059669', border: 'none', padding: '0.5rem', borderRadius: '8px', cursor: 'pointer' }}><HiCheck /></button>
+                                                <button className="icon-btn-danger" onClick={() => handleAdminAction(b.bookingId, 'reject')} style={{ background: '#fff1f2', color: '#e11d48', border: 'none', padding: '0.5rem', borderRadius: '8px', cursor: 'pointer' }}><HiX /></button>
+                                            </div>
+                                        )}
+                                        {(!isAdmin || b.status !== 'PENDING') && (
+                                            <button className="btn-ghost" onClick={() => handleAdminAction(b.bookingId, 'cancel')} style={{ border: 'none', background: 'transparent', color: '#94a3b8', padding: '0.5rem', cursor: 'pointer' }}><HiTrash /></button>
+                                        )}
+                                    </div>
                                 </article>
+                            ))}
+                            {(isAdmin ? (viewMode === 'PE' ? pendingBookings : allBookings) : myBookings).length === 0 && (
+                                <div style={{ textAlign: 'center', padding: '4rem', opacity: 0.5 }}>
+                                    <HiShuffle size={48} style={{ marginBottom: '1rem' }} />
+                                    <p>No transactions identified in current filter.</p>
+                                </div>
+                            )}
+                        </div>
+                    </section>
+                </main>
+            </div>
+
+            {/* Smart Booking Modal */}
+            {isFormOpen && (
+                <div className="modern-modal-overlay" onClick={() => setIsFormOpen(false)}>
+                    <div className="modern-modal-content" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <div>
+                                <h3 style={{ margin: 0 }}>New Reservation Request</h3>
+                                <p className="muted" style={{ margin: 0 }}>Step 1: Check availability</p>
+                            </div>
+                            <button className="close-modal-btn" onClick={() => setIsFormOpen(false)}><HiX size={24} /></button>
+                        </div>
+
+                        <div className="modal-body" style={{ padding: '0 2rem 2rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                                <div className="form-group">
+                                    <span>Select Resource</span>
+                                    <select value={selectedResourceId} onChange={e => setSelectedResourceId(e.target.value)}>
+                                        <option value="">Choose Asset...</option>
+                                        {resources.map(r => <option key={r.id} value={r.id}>{r.name} ({r.location})</option>)}
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <span>Reservation Date</span>
+                                    <input type="date" value={bookingDate} onChange={e => setBookingDate(e.target.value)} />
+                                </div>
+                            </div>
+
+                            <button className="btn btn-primary" onClick={handleCheckAvailability} disabled={checkingAvailability} style={{ width: '100%', marginBottom: '2rem' }}>
+                                {checkingAvailability ? <><HiClock className="spin" /> Synchronizing...</> : <><HiSearch /> Verify Availability</>}
+                            </button>
+
+                            {resourceAvailability && (
+                                <div className="availability-grid" style={{ marginTop: '1.5rem' }}>
+                                     <h4 style={{ marginBottom: '1rem' }}>Available Time Slots</h4>
+                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '0.75rem' }}>
+                                        {(resourceAvailability.slots || []).map((slot, i) => (
+                                            <button 
+                                                key={i} 
+                                                className={`slot-btn ${selectedSlot === slot ? 'active' : ''}`}
+                                                onClick={() => setSelectedSlot(slot)}
+                                                style={{ border: '1px solid var(--line-soft)', padding: '0.6rem', borderRadius: '10px', background: selectedSlot === slot ? 'var(--brand)' : '#fff', color: selectedSlot === slot ? '#fff' : 'inherit', cursor: 'pointer', textAlign: 'center', fontWeight: 600 }}
+                                            >
+                                                {safeFormatTime(slot.startTime)}
+                                            </button>
+                                        ))}
+                                     </div>
+                                     {selectedSlot && (
+                                         <div className="form-group" style={{ marginTop: '1.5rem' }}>
+                                             <span>Reservation Purpose / Title</span>
+                                             <input value={bookingTitle} onChange={e => setBookingTitle(e.target.value)} placeholder="e.g. Physics Tutorial Group A" />
+                                         </div>
+                                     )}
+                                </div>
                             )}
                         </div>
 
-                        <section className="section">
-                            <h3>Create Booking Request</h3>
-                            <p className="muted">
-                                Select a resource ID, check availability, then book it.
-                            </p>
-
-                            <form className="booking-form" onSubmit={handleCreateBooking}>
-                                <div className="booking-grid">
-                                    <label className="field">
-                                        <span>Booking Resource ID</span>
-                                        <select
-                                            value={selectedResourceId}
-                                            onChange={(event) => {
-                                                setSelectedResourceId(event.target.value);
-                                                setResourceAvailability(null);
-                                            }}
-                                            required
-                                        >
-                                            {activeResources.length === 0 && (
-                                                <option value="">No active resources</option>
-                                            )}
-                                            {activeResources.map((resource) => (
-                                                <option key={resource.id} value={resource.id}>
-                                                    ID {resource.id} - {resource.name} ({resource.location})
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </label>
-
-                                    <label className="field">
-                                        <span>Title</span>
-                                        <input
-                                            name="title"
-                                            value={form.title}
-                                            onChange={handleChange}
-                                            placeholder="Lecture / Meeting title"
-                                            required
-                                        />
-                                    </label>
-
-                                    <label className="field">
-                                        <span>Description</span>
-                                        <input
-                                            name="description"
-                                            value={form.description}
-                                            onChange={handleChange}
-                                            placeholder="Optional details"
-                                        />
-                                    </label>
-
-                                    <label className="field">
-                                        <span>Date</span>
-                                        <input
-                                            type="date"
-                                            name="bookingDate"
-                                            value={form.bookingDate}
-                                            onChange={handleChange}
-                                            required
-                                        />
-                                    </label>
-
-                                    <label className="field">
-                                        <span>Start Time</span>
-                                        <input
-                                            type="time"
-                                            name="startTime"
-                                            value={form.startTime}
-                                            onChange={handleChange}
-                                            required
-                                        />
-                                    </label>
-
-                                    <label className="field">
-                                        <span>End Time</span>
-                                        <input
-                                            type="time"
-                                            name="endTime"
-                                            value={form.endTime}
-                                            onChange={handleChange}
-                                            required
-                                        />
-                                    </label>
-                                </div>
-
-                                <div className="actions-row booking-actions">
-                                    <button
-                                        type="button"
-                                        className="btn btn-secondary"
-                                        onClick={handleCheckAvailability}
-                                        disabled={checkingAvailability || !selectedResourceId}
-                                    >
-                                        {checkingAvailability ? "Checking..." : "Check Availability"}
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        className="btn btn-primary"
-                                        disabled={submitting || !selectedResourceId}
-                                    >
-                                        {submitting ? "Submitting..." : "Submit Booking Request"}
-                                    </button>
-                                </div>
-                            </form>
-                        </section>
-
-                        {resourceAvailability && (
-                            <section className="section">
-                                <h3>
-                                    Resource ID {resourceAvailability.facilityAssetId} Schedule on{" "}
-                                    {formatDate(resourceAvailability.bookingDate)}
-                                </h3>
-                                {resourceAvailability.bookedSlots?.length > 0 ? (
-                                    <div className="booking-list">
-                                        {resourceAvailability.bookedSlots.map((slot) => (
-                                            <article key={slot.bookingId} className="booking-card">
-                                                <div className="booking-card__head">
-                                                    <h4>
-                                                        {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
-                                                    </h4>
-                                                    <span className={statusClass(slot.status)}>{slot.status}</span>
-                                                </div>
-                                            </article>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <p className="text-muted">No bookings for this resource on selected date.</p>
-                                )}
-                            </section>
-                        )}
-
-                        <section className="section">
-                            <h3>My Booking Requests</h3>
-                            {myBookings.length > 0 ? (
-                                <div className="booking-list">
-                                    {myBookings.map((booking) => (
-                                        <article key={booking.bookingId} className="booking-card">
-                                            <div className="booking-card__head">
-                                                <h4>{booking.title}</h4>
-                                                <span className={statusClass(booking.status)}>{booking.status}</span>
-                                            </div>
-                                            <p className="muted">
-                                                Resource ID {booking.facilityAssetId || "-"} -{" "}
-                                                {booking.facilityName || "Resource"} ({booking.location})
-                                            </p>
-                                            <p className="muted">
-                                                {formatDate(booking.bookingDate)} | {formatTime(booking.startTime)} -{" "}
-                                                {formatTime(booking.endTime)}
-                                            </p>
-                                            {booking.description && <p>{booking.description}</p>}
-                                        </article>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="text-muted">No booking requests yet.</p>
-                            )}
-                        </section>
-
-                        {isAdmin && (
-                            <section className="section">
-                                <h3>Admin Approval Queue</h3>
-                                {pendingBookings.length > 0 ? (
-                                    <div className="booking-list">
-                                        {pendingBookings.map((booking) => (
-                                            <article key={booking.bookingId} className="booking-card">
-                                                <div className="booking-card__head">
-                                                    <h4>{booking.title}</h4>
-                                                    <span className={statusClass(booking.status)}>{booking.status}</span>
-                                                </div>
-                                                <p className="muted">
-                                                    Requested by {booking.bookedByEmail} | Resource ID{" "}
-                                                    {booking.facilityAssetId || "-"} - {booking.facilityName || "Resource"}
-                                                </p>
-                                                <p className="muted">
-                                                    {formatDate(booking.bookingDate)} | {formatTime(booking.startTime)} -{" "}
-                                                    {formatTime(booking.endTime)}
-                                                </p>
-                                                {booking.description && <p>{booking.description}</p>}
-
-                                                <div className="actions-row">
-                                                    <button
-                                                        className="btn btn-primary"
-                                                        type="button"
-                                                        onClick={() => handleAdminAction(booking.bookingId, "approve")}
-                                                        disabled={actionBookingId === booking.bookingId}
-                                                    >
-                                                        Approve
-                                                    </button>
-                                                    <button
-                                                        className="btn btn-danger"
-                                                        type="button"
-                                                        onClick={() => handleAdminAction(booking.bookingId, "reject")}
-                                                        disabled={actionBookingId === booking.bookingId}
-                                                    >
-                                                        Reject
-                                                    </button>
-                                                </div>
-                                            </article>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <p className="text-muted">No pending booking requests.</p>
-                                )}
-                            </section>
-                        )}
-                    </>
-                )}
-            </div>
+                        <div className="modal-actions" style={{ display: 'flex', gap: '1rem', padding: '1.5rem 2rem', borderTop: '1px solid var(--line-soft)' }}>
+                            <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => setIsFormOpen(false)}>Discard</button>
+                            <button className="btn btn-primary" style={{ flex: 2 }} onClick={handleCreateBooking} disabled={submitting || !selectedSlot}>
+                                {submitting ? "Finalizing..." : "Submit Reservation"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
+}
+
+function HiShuffle({ size, style }) {
+    return <HiClipboardList size={size} style={{ ...style, opacity: 0.3 }} />;
 }
