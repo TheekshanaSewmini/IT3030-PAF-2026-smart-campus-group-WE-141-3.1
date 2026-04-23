@@ -413,17 +413,20 @@ export default function Booking() {
                             )}
                         </div>
 
-                        <section className="section">
-                            <h3>Create Booking Request</h3>
-                            <p className="muted">
-                                Select a resource ID, check availability, then book it.
-                            </p>
+                        <section className="section glass-panel">
+                            <div className="section-header">
+                                <div>
+                                    <h3>Create Booking Request</h3>
+                                    <p className="muted">Check availability and secure your resource.</p>
+                                </div>
+                            </div>
 
-                            <form className="booking-form" onSubmit={handleCreateBooking}>
-                                <div className="booking-grid">
-                                    <label className="field">
-                                        <span>Booking Resource ID</span>
+                            <form className="minimal-modern-form" onSubmit={handleCreateBooking}>
+                                <div className="modern-form-grid">
+                                    <label className="modern-field">
+                                        <span>Booking Resource</span>
                                         <select
+                                            className="modern-input"
                                             value={selectedResourceId}
                                             onChange={(event) => {
                                                 setSelectedResourceId(event.target.value);
@@ -436,36 +439,28 @@ export default function Booking() {
                                             )}
                                             {activeResources.map((resource) => (
                                                 <option key={resource.id} value={resource.id}>
-                                                    ID {resource.id} - {resource.name} ({resource.location})
+                                                    {resource.name} — {resource.location} (ID: {resource.id})
                                                 </option>
                                             ))}
                                         </select>
                                     </label>
 
-                                    <label className="field">
-                                        <span>Title</span>
+                                    <label className="modern-field">
+                                        <span>Meeting Title</span>
                                         <input
+                                            className="modern-input"
                                             name="title"
                                             value={form.title}
                                             onChange={handleChange}
-                                            placeholder="Lecture / Meeting title"
+                                            placeholder="e.g. Project Discussion"
                                             required
                                         />
                                     </label>
 
-                                    <label className="field">
-                                        <span>Description</span>
-                                        <input
-                                            name="description"
-                                            value={form.description}
-                                            onChange={handleChange}
-                                            placeholder="Optional details"
-                                        />
-                                    </label>
-
-                                    <label className="field">
+                                    <label className="modern-field">
                                         <span>Date</span>
                                         <input
+                                            className="modern-input"
                                             type="date"
                                             name="bookingDate"
                                             value={form.bookingDate}
@@ -474,9 +469,21 @@ export default function Booking() {
                                         />
                                     </label>
 
-                                    <label className="field">
+                                    <label className="modern-field">
+                                        <span>Description (Optional)</span>
+                                        <input
+                                            className="modern-input"
+                                            name="description"
+                                            value={form.description}
+                                            onChange={handleChange}
+                                            placeholder="Brief overview of the meeting"
+                                        />
+                                    </label>
+
+                                    <label className="modern-field">
                                         <span>Start Time</span>
                                         <input
+                                            className="modern-input"
                                             type="time"
                                             name="startTime"
                                             value={form.startTime}
@@ -485,9 +492,10 @@ export default function Booking() {
                                         />
                                     </label>
 
-                                    <label className="field">
+                                    <label className="modern-field">
                                         <span>End Time</span>
                                         <input
+                                            className="modern-input"
                                             type="time"
                                             name="endTime"
                                             value={form.endTime}
@@ -497,50 +505,43 @@ export default function Booking() {
                                     </label>
                                 </div>
 
-                                <div className="actions-row booking-actions">
+                                {resourceAvailability && (
+                                    <div className="availability-section">
+                                        <h4 className="availability-title">
+                                            Resource Availability Timeline
+                                        </h4>
+                                        <div className="slots-grid">
+                                            {resourceAvailability.slots.map((slot, index) => (
+                                                <span 
+                                                    key={index} 
+                                                    className={`slot-pill ${slot.available ? "available" : "booked"}`}
+                                                >
+                                                    {slot.available ? "🟢" : "🔴"} {formatTime(slot.time)}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="booking-actions-modern">
                                     <button
                                         type="button"
-                                        className="btn btn-secondary"
+                                        className="btn btn-modern btn-secondary-modern"
                                         onClick={handleCheckAvailability}
                                         disabled={checkingAvailability || !selectedResourceId}
                                     >
-                                        {checkingAvailability ? "Checking..." : "Check Availability"}
+                                        {checkingAvailability ? "⏳ Checking..." : "🔍 Check Availability"}
                                     </button>
                                     <button
                                         type="submit"
-                                        className="btn btn-primary"
-                                        disabled={submitting || !selectedResourceId}
+                                        className="btn btn-modern btn-primary-modern"
+                                        disabled={submitting}
                                     >
-                                        {submitting ? "Submitting..." : "Submit Booking Request"}
+                                        {submitting ? "⌛ Booking..." : "✅ Submit Booking Request"}
                                     </button>
                                 </div>
                             </form>
                         </section>
-
-                        {resourceAvailability && (
-                            <section className="section">
-                                <h3>
-                                    Resource ID {resourceAvailability.facilityAssetId} Schedule on{" "}
-                                    {formatDate(resourceAvailability.bookingDate)}
-                                </h3>
-                                {resourceAvailability.bookedSlots?.length > 0 ? (
-                                    <div className="booking-list">
-                                        {resourceAvailability.bookedSlots.map((slot) => (
-                                            <article key={slot.bookingId} className="booking-card">
-                                                <div className="booking-card__head">
-                                                    <h4>
-                                                        {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
-                                                    </h4>
-                                                    <span className={statusClass(slot.status)}>{slot.status}</span>
-                                                </div>
-                                            </article>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <p className="text-muted">No bookings for this resource on selected date.</p>
-                                )}
-                            </section>
-                        )}
 
                         <section className="section">
                             <h3>My Booking Requests</h3>
