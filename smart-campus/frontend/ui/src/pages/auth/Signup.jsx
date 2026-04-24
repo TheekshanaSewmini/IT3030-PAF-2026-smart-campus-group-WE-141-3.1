@@ -1,7 +1,18 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import {
+    HiAcademicCap,
+    HiCalendar,
+    HiIdentification,
+    HiLockClosed,
+    HiMail,
+    HiPhone,
+    HiSparkles,
+    HiUser
+} from "react-icons/hi";
 import api from "../../api";
-import { HiUser, HiMail, HiPhone, HiShieldCheck, HiArrowRight, HiIdentification, HiAcademicCap, HiCalendar, HiLockClosed, HiSparkles } from "react-icons/hi";
+import heroImage from "../../assets/hero.png";
+import styles from "./AuthUi.module.css";
 
 const roleOptions = ["USER", "ADMIN", "TECHNICIAN"];
 const yearOptions = ["FIRST", "SECOND", "THIRD", "FOURTH"];
@@ -85,109 +96,220 @@ export default function Signup() {
     };
 
     return (
-        <div className="page-shell" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '2rem' }}>
-            <div className="bg-layer bg-auth" />
-            
-            <div className="glass-card auth-card" style={{ maxWidth: '850px', width: '100%', padding: '3rem', borderRadius: '32px', backdropFilter: 'blur(30px)' }}>
-                <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-                    <div style={{ display: 'inline-flex', background: 'var(--brand-soft)', color: 'var(--brand)', padding: '0.75rem', borderRadius: '16px', marginBottom: '1rem' }}>
-                        <HiIdentification size={32} />
+        <div className={styles.screen}>
+            <main className={`${styles.shell} ${styles.split} ${styles.authRoute}`}>
+                <section className={`${styles.visual} ${styles.glass}`}>
+                    <div>
+                        <div className={styles.brandRow}>
+                            <div className={styles.brandDot}>
+                                <HiAcademicCap size={22} />
+                            </div>
+                            <h1 className={styles.brandText}>SmartCampus</h1>
+                        </div>
+                        <h2 className={styles.visualTitle}>Create your account and activate full campus access.</h2>
+                        <p className={styles.visualBody}>
+                            Register once to access booking approvals, role-based dashboards, and secure account tools.
+                        </p>
+                        <div className={styles.visualStats}>
+                            <div className={styles.stat}>
+                                <strong>Fast</strong>
+                                <span>OTP verification flow</span>
+                            </div>
+                            <div className={styles.stat}>
+                                <strong>Safe</strong>
+                                <span>Token + cookie security</span>
+                            </div>
+                        </div>
                     </div>
-                    <h1 className="brand" style={{ fontSize: '2.25rem', fontWeight: 800, marginBottom: '0.5rem' }}>Create Account</h1>
-                    <p className="subtitle" style={{ fontSize: '1.05rem', color: '#64748b' }}>Start your journey with Smarter Campus Management</p>
-                </div>
+                    <div className={styles.heroImageWrap}>
+                        <img className={styles.heroImage} src={heroImage} alt="Smart campus visual" />
+                    </div>
+                </section>
 
-                {error && <div className="message error" style={{ borderRadius: '12px', padding: '1rem', marginBottom: '2rem' }}>{error}</div>}
-                {success && <div className="message success" style={{ borderRadius: '12px', padding: '1rem', marginBottom: '2rem' }}>{success}</div>}
-
-                <form className="form-grid" onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-                    <div className="form-group">
-                        <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155', marginBottom: '0.5rem', display: 'block' }}>First Name</span>
-                        <div style={{ position: 'relative' }}>
-                            <HiUser style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} size={18} />
-                            <input name="firstName" value={form.firstName} onChange={handleChange} required style={{ paddingLeft: '3rem' }} placeholder="John" />
+                <section className={`${styles.cardWide} ${styles.glass}`}>
+                    <div className={styles.cardHeader}>
+                        <div>
+                            <p className={styles.eyebrow}>Create Account</p>
+                            <h2 className={styles.title}>Student Registration</h2>
+                            <p className={styles.subtitle}>Fill the details below. Logic is unchanged, only UI is redesigned.</p>
+                        </div>
+                        <div className={styles.headerIcon}>
+                            <HiIdentification size={22} />
                         </div>
                     </div>
 
-                    <div className="form-group">
-                        <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155', marginBottom: '0.5rem', display: 'block' }}>Last Name</span>
-                        <div style={{ position: 'relative' }}>
-                            <HiUser style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} size={18} />
-                            <input name="lastName" value={form.lastName} onChange={handleChange} required style={{ paddingLeft: '3rem' }} placeholder="Doe" />
+                    {error && <div className={`${styles.notice} ${styles.noticeError}`}>{error}</div>}
+                    {success && <div className={`${styles.notice} ${styles.noticeSuccess}`}>{success}</div>}
+
+                    <form className={styles.form} onSubmit={handleSubmit}>
+                        <div className={styles.formGridTwo}>
+                            <label className={styles.field}>
+                                <span className={styles.label}>First Name</span>
+                                <div className={styles.inputWrap}>
+                                    <HiUser className={styles.inputIcon} size={18} />
+                                    <input
+                                        className={`${styles.input} ${styles.inputPadded}`}
+                                        name="firstName"
+                                        value={form.firstName}
+                                        onChange={handleChange}
+                                        required
+                                    />
+                                </div>
+                            </label>
+
+                            <label className={styles.field}>
+                                <span className={styles.label}>Last Name</span>
+                                <div className={styles.inputWrap}>
+                                    <HiUser className={styles.inputIcon} size={18} />
+                                    <input
+                                        className={`${styles.input} ${styles.inputPadded}`}
+                                        name="lastName"
+                                        value={form.lastName}
+                                        onChange={handleChange}
+                                        required
+                                    />
+                                </div>
+                            </label>
+
+                            <label className={styles.field}>
+                                <span className={styles.label}>University Email</span>
+                                <div className={styles.inputWrap}>
+                                    <HiMail className={styles.inputIcon} size={18} />
+                                    <input
+                                        className={`${styles.input} ${styles.inputPadded}`}
+                                        name="email"
+                                        type="email"
+                                        placeholder="name@my.sliit.lk"
+                                        value={form.email}
+                                        onChange={handleChange}
+                                        required
+                                    />
+                                </div>
+                            </label>
+
+                            <label className={styles.field}>
+                                <span className={styles.label}>Recovery Email</span>
+                                <div className={styles.inputWrap}>
+                                    <HiMail className={styles.inputIcon} size={18} />
+                                    <input
+                                        className={`${styles.input} ${styles.inputPadded}`}
+                                        name="tempEmail"
+                                        type="email"
+                                        placeholder="backup@email.com"
+                                        value={form.tempEmail}
+                                        onChange={handleChange}
+                                        required
+                                    />
+                                </div>
+                            </label>
+
+                            <label className={styles.field}>
+                                <span className={styles.label}>Phone Number</span>
+                                <div className={styles.inputWrap}>
+                                    <HiPhone className={styles.inputIcon} size={18} />
+                                    <input
+                                        className={`${styles.input} ${styles.inputPadded}`}
+                                        name="phoneNumber"
+                                        placeholder="07XXXXXXXX"
+                                        value={form.phoneNumber}
+                                        onChange={handleChange}
+                                        required
+                                    />
+                                </div>
+                            </label>
+
+                            <label className={styles.field}>
+                                <span className={styles.label}>Role</span>
+                                <div className={styles.inputWrap}>
+                                    <HiAcademicCap className={styles.inputIcon} size={18} />
+                                    <select
+                                        className={`${styles.select} ${styles.inputPadded}`}
+                                        name="role"
+                                        value={form.role}
+                                        onChange={handleChange}
+                                    >
+                                        {roleOptions.map((option) => (
+                                            <option key={option} value={option}>{option}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </label>
+
+                            <label className={styles.field}>
+                                <span className={styles.label}>Academic Year</span>
+                                <div className={styles.inputWrap}>
+                                    <HiCalendar className={styles.inputIcon} size={18} />
+                                    <select
+                                        className={`${styles.select} ${styles.inputPadded}`}
+                                        name="year"
+                                        value={form.year}
+                                        onChange={handleChange}
+                                    >
+                                        {yearOptions.map((option) => (
+                                            <option key={option} value={option}>{option}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </label>
+
+                            <label className={styles.field}>
+                                <span className={styles.label}>Semester</span>
+                                <div className={styles.inputWrap}>
+                                    <HiSparkles className={styles.inputIcon} size={18} />
+                                    <select
+                                        className={`${styles.select} ${styles.inputPadded}`}
+                                        name="semester"
+                                        value={form.semester}
+                                        onChange={handleChange}
+                                    >
+                                        {semesterOptions.map((option) => (
+                                            <option key={option} value={option}>{option}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </label>
+
+                            <label className={styles.field}>
+                                <span className={styles.label}>Password</span>
+                                <div className={styles.inputWrap}>
+                                    <HiLockClosed className={styles.inputIcon} size={18} />
+                                    <input
+                                        className={`${styles.input} ${styles.inputPadded}`}
+                                        name="password"
+                                        type="password"
+                                        value={form.password}
+                                        onChange={handleChange}
+                                        required
+                                    />
+                                </div>
+                            </label>
+
+                            <label className={styles.field}>
+                                <span className={styles.label}>Confirm Password</span>
+                                <div className={styles.inputWrap}>
+                                    <HiLockClosed className={styles.inputIcon} size={18} />
+                                    <input
+                                        className={`${styles.input} ${styles.inputPadded}`}
+                                        name="confirmPassword"
+                                        type="password"
+                                        value={form.confirmPassword}
+                                        onChange={handleChange}
+                                        required
+                                    />
+                                </div>
+                            </label>
                         </div>
+
+                        <button className={styles.primaryBtn} type="submit" disabled={loading}>
+                            {loading ? "Creating account..." : "Complete Registration"}
+                        </button>
+                    </form>
+
+                    <div className={styles.footText}>
+                        Already have an account? <Link className={styles.link} to="/login">Sign in</Link>
                     </div>
-
-                    <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                        <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155', marginBottom: '0.5rem', display: 'block' }}>University Email</span>
-                        <div style={{ position: 'relative' }}>
-                            <HiMail style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} size={18} />
-                            <input name="email" type="email" placeholder="ITXXXXXXXX@my.sliit.lk" value={form.email} onChange={handleChange} required style={{ paddingLeft: '3rem' }} />
-                        </div>
-                    </div>
-
-                    <div className="form-group">
-                        <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155', marginBottom: '0.5rem', display: 'block' }}>Phone Number</span>
-                        <div style={{ position: 'relative' }}>
-                            <HiPhone style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} size={18} />
-                            <input name="phoneNumber" placeholder="07XXXXXXXX" value={form.phoneNumber} onChange={handleChange} required style={{ paddingLeft: '3rem' }} />
-                        </div>
-                    </div>
-
-                    <div className="form-group">
-                        <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155', marginBottom: '0.5rem', display: 'block' }}>Academic Year</span>
-                        <div style={{ position: 'relative' }}>
-                            <HiCalendar style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} size={18} />
-                            <select name="year" value={form.year} onChange={handleChange} style={{ paddingLeft: '3rem' }}>
-                                {yearOptions.map(y => <option key={y} value={y}>{y}</option>)}
-                            </select>
-                        </div>
-                    </div>
-
-                    <div className="form-group">
-                        <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155', marginBottom: '0.5rem', display: 'block' }}>Academic Role</span>
-                        <div style={{ position: 'relative' }}>
-                            <HiAcademicCap style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} size={18} />
-                            <select name="role" value={form.role} onChange={handleChange} style={{ paddingLeft: '3rem' }}>
-                                {roleOptions.map(r => <option key={r} value={r}>{r}</option>)}
-                            </select>
-                        </div>
-                    </div>
-
-                    <div className="form-group">
-                        <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155', marginBottom: '0.5rem', display: 'block' }}>Semester</span>
-                        <div style={{ position: 'relative' }}>
-                            <HiSparkles style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} size={18} />
-                            <select name="semester" value={form.semester} onChange={handleChange} style={{ paddingLeft: '3rem' }}>
-                                {semesterOptions.map(s => <option key={s} value={s}>{s}</option>)}
-                            </select>
-                        </div>
-                    </div>
-
-                    <div className="form-group">
-                        <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155', marginBottom: '0.5rem', display: 'block' }}>Password</span>
-                        <div style={{ position: 'relative' }}>
-                            <HiLockClosed style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} size={18} />
-                            <input name="password" type="password" value={form.password} onChange={handleChange} required style={{ paddingLeft: '3rem' }} placeholder="••••••••" />
-                        </div>
-                    </div>
-
-                    <div className="form-group">
-                        <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155', marginBottom: '0.5rem', display: 'block' }}>Confirm Password</span>
-                        <div style={{ position: 'relative' }}>
-                            <HiShieldCheck style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} size={18} />
-                            <input name="confirmPassword" type="password" value={form.confirmPassword} onChange={handleChange} required style={{ paddingLeft: '3rem' }} placeholder="••••••••" />
-                        </div>
-                    </div>
-
-                    <button className="btn btn-primary" type="submit" disabled={loading} style={{ gridColumn: 'span 2', padding: '1rem', borderRadius: '14px', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', marginTop: '1rem' }}>
-                        {loading ? "Creating your account..." : <><HiArrowRight /> Complete Registration</>}
-                    </button>
-                </form>
-
-                <div style={{ marginTop: '2rem', textAlign: 'center', color: '#64748b' }}>
-                    Already have an account? <Link className="inline-link" to="/login" style={{ fontWeight: 700, color: 'var(--brand)' }}>Sign in here</Link>
-                </div>
-            </div>
+                </section>
+            </main>
         </div>
     );
 }

@@ -1,8 +1,11 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import api, { setStoredAccessToken } from "../../api";
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { HiAcademicCap, HiEye, HiEyeOff, HiLockClosed, HiMail, HiSparkles } from "react-icons/hi";
+import api, { getGoogleOAuthLoginUrl } from "../../api";
 import { roleHomePath } from "../../utils/roleHome";
-import { HiMail, HiLockClosed, HiEye, HiEyeOff, HiArrowRight, HiShieldCheck, HiSparkles } from "react-icons/hi";
+import { queueWelcomePopup } from "../../utils/welcomePopup";
+import styles from "./AuthUi.module.css";
+import heroImage from "../../assets/hero.png";
 
 const getErrorMessage = (error, fallback) => {
     const payload = error?.response?.data;
@@ -13,11 +16,37 @@ const getErrorMessage = (error, fallback) => {
 
 export default function Login() {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const [form, setForm] = useState({ email: "", password: "" });
     const [errors, setErrors] = useState({});
     const [notice, setNotice] = useState({ type: "", text: "" });
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        const oauthError = searchParams.get("oauthError");
+        if (oauthError) {
+            setNotice({ type: "error", text: oauthError });
+        }
+
+        let active = true;
+        const bootstrapSession = async () => {
+            try {
+                const session = await api.get("/auth/me");
+                const userRole = session?.data?.user?.role;
+                if (active && session?.data?.authenticated && userRole) {
+                    navigate(roleHomePath(userRole), { replace: true });
+                }
+            } catch {
+                // No active session; remain on login page.
+            }
+        };
+
+        bootstrapSession();
+        return () => {
+            active = false;
+        };
+    }, [navigate, searchParams]);
 
     const handleChange = (event) => {
         const { name, value } = event.target;
@@ -64,12 +93,11 @@ export default function Login() {
                 return;
             }
 
-            const role = response.data.role;
-            const accessToken = response.data.accessToken;
+            const meResponse = await api.get("/auth/me").catch(() => null);
+            const user = meResponse?.data?.user;
+            const role = user?.role || response.data?.role;
 
-            if (accessToken) {
-                setStoredAccessToken(accessToken);
-            }
+            queueWelcomePopup(user || { role, email: form.email });
 
             setNotice({ type: "success", text: "Login successful. Redirecting..." });
             navigate(roleHomePath(role), { replace: true });
@@ -83,130 +111,130 @@ export default function Login() {
         }
     };
 
+    const handleGoogleLogin = () => {
+        if (typeof window !== "undefined") {
+            window.location.assign(getGoogleOAuthLoginUrl());
+        }
+    };
+
     return (
-        <div className="login-page">
-            <div className="login-page__canvas" />
-
-            <div className="login-layout">
-                <section className="login-showcase" style={{ zIndex: 1 }}>
-                    <div className="showcase-content" style={{ position: 'relative', zIndex: 2 }}>
-                        <div className="showcase-brand" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
-                            <div style={{ background: 'rgba(255,255,255,0.2)', padding: '0.6rem', borderRadius: '12px', backdropFilter: 'blur(10px)' }}>
-                                <HiShieldCheck size={28} />
+        <div className={styles.screen}>
+            <main className={`${styles.shell} ${styles.split} ${styles.authRoute}`}>
+                <section className={`${styles.visual} ${styles.glass}`}>
+                    <div>
+                        <div className={styles.brandRow}>
+                            <div className={styles.brandDot}>
+                                <HiAcademicCap size={22} />
                             </div>
-                            <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, letterSpacing: '-0.02em' }}>SmartCampus</h1>
+                            <h1 className={styles.brandText}>SmartCampus</h1>
                         </div>
-                        
-                        <div className="showcase-text">
-                            <h2 style={{ fontSize: '2.5rem', fontWeight: 800, lineHeight: 1.1, marginBottom: '1.5rem' }}>
-                                Elevating <span style={{ color: '#60a5fa' }}>University</span> Life through Intelligence.
-                            </h2>
-                            <p style={{ fontSize: '1.1rem', opacity: 0.9, lineHeight: 1.6, maxWidth: '400px' }}>
-                                Access your resources, manage bookings, and stay connected with the most advanced campus management ecosystem.
-                            </p>
+                        <h2 className={styles.visualTitle}>
+                            One secure place for campus bookings, resources, and decisions.
+                        </h2>
+                        <p className={styles.visualBody}>
+                            Sign in to continue with real-time booking approvals, profile tools, and personalized
+                            notifications.
+                        </p>
+                        <div className={styles.visualStats}>
+                            <div className={styles.stat}>
+                                <strong>15k+</strong>
+                                <span>Active users</span>
+                            </div>
+                            <div className={styles.stat}>
+                                <strong>24/7</strong>
+                                <span>Campus access</span>
+                            </div>
                         </div>
                     </div>
-
-                    <div className="showcase-stats" style={{ display: 'flex', gap: '2rem', position: 'relative', zIndex: 2 }}>
-                        <div>
-                            <div style={{ fontSize: '1.75rem', fontWeight: 800 }}>15k+</div>
-                            <div style={{ fontSize: '0.85rem', opacity: 0.7 }}>Active Students</div>
-                        </div>
-                        <div>
-                            <div style={{ fontSize: '1.75rem', fontWeight: 800 }}>98%</div>
-                            <div style={{ fontSize: '0.85rem', opacity: 0.7 }}>Resource Uptime</div>
-                        </div>
+                    <div className={styles.heroImageWrap}>
+                        <img className={styles.heroImage} src={heroImage} alt="Smart campus visual" />
                     </div>
                 </section>
 
-                <section className="login-card-wrap" style={{ padding: '2rem' }}>
-                    <div className="login-card">
-                        <div className="login-card__header" style={{ marginBottom: '2.5rem' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                <div>
-                                    <span className="login-card__eyebrow">Welcome Back</span>
-                                    <h2 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.5rem' }}>Sign In</h2>
-                                    <p>Enter your details to access your portal</p>
-                                </div>
-                                <div style={{ color: 'var(--brand)', background: 'var(--brand-soft)', padding: '0.5rem', borderRadius: '12px' }}>
-                                    <HiSparkles size={24} />
-                                </div>
-                            </div>
+                <section className={`${styles.card} ${styles.glass}`}>
+                    <div className={styles.cardHeader}>
+                        <div>
+                            <p className={styles.eyebrow}>Welcome Back</p>
+                            <h2 className={styles.title}>Sign In</h2>
+                            <p className={styles.subtitle}>Access your account with email and password.</p>
                         </div>
+                        <div className={styles.headerIcon}>
+                            <HiSparkles size={22} />
+                        </div>
+                    </div>
 
-                        {notice.text && (
-                            <div className={`message ${notice.type}`} style={{ marginBottom: '1.5rem', borderRadius: '12px', padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                {notice.type === 'error' ? <HiShieldCheck style={{ transform: 'rotate(180deg)' }} /> : <HiShieldCheck />}
-                                {notice.text}
+                    {notice.text && (
+                        <div className={`${styles.notice} ${notice.type === "error" ? styles.noticeError : styles.noticeSuccess}`}>
+                            {notice.text}
+                        </div>
+                    )}
+
+                    <form className={styles.form} onSubmit={handleSubmit} noValidate>
+                        <label className={styles.field}>
+                            <span className={styles.label}>Email Address</span>
+                            <div className={styles.inputWrap}>
+                                <HiMail className={styles.inputIcon} size={18} />
+                                <input
+                                    className={`${styles.input} ${styles.inputPadded}`}
+                                    type="email"
+                                    name="email"
+                                    value={form.email}
+                                    onChange={handleChange}
+                                    placeholder="name@university.edu"
+                                />
                             </div>
-                        )}
+                            {errors.email && <span className={styles.fieldError}>{errors.email}</span>}
+                        </label>
 
-                        <form onSubmit={handleSubmit} noValidate style={{ display: 'grid', gap: '1.25rem' }}>
-                            <div className="form-group">
-                                <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#334155', marginBottom: '0.5rem' }}>Email Address</span>
-                                <div style={{ position: 'relative' }}>
-                                    <HiMail style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} size={20} />
-                                    <input
-                                        type="email"
-                                        name="email"
-                                        value={form.email}
-                                        onChange={handleChange}
-                                        placeholder="name@university.edu"
-                                        style={{ paddingLeft: '3rem' }}
-                                    />
-                                </div>
-                                {errors.email && <span className="error" style={{ fontSize: '0.8rem', color: 'var(--danger)', marginTop: '0.25rem' }}>{errors.email}</span>}
+                        <label className={styles.field}>
+                            <span className={styles.label}>Password</span>
+                            <div className={styles.inputWrap}>
+                                <HiLockClosed className={styles.inputIcon} size={18} />
+                                <input
+                                    className={`${styles.input} ${styles.inputPadded}`}
+                                    type={showPassword ? "text" : "password"}
+                                    name="password"
+                                    value={form.password}
+                                    onChange={handleChange}
+                                    placeholder="Enter your password"
+                                />
+                                <button
+                                    type="button"
+                                    className={styles.passwordToggle}
+                                    onClick={() => setShowPassword((prev) => !prev)}
+                                    aria-label={showPassword ? "Hide password" : "Show password"}
+                                >
+                                    {showPassword ? <HiEyeOff size={18} /> : <HiEye size={18} />}
+                                </button>
                             </div>
+                            {errors.password && <span className={styles.fieldError}>{errors.password}</span>}
+                        </label>
 
-                            <div className="form-group">
-                                <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#334155', marginBottom: '0.5rem' }}>Password</span>
-                                <div style={{ position: 'relative' }}>
-                                    <HiLockClosed style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} size={20} />
-                                    <input
-                                        type={showPassword ? "text" : "password"}
-                                        name="password"
-                                        value={form.password}
-                                        onChange={handleChange}
-                                        placeholder="••••••••"
-                                        style={{ paddingLeft: '3rem', paddingRight: '4rem' }}
-                                    />
-                                    <button
-                                        type="button"
-                                        style={{ position: 'absolute', right: '0.5rem', top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', padding: '0.5rem' }}
-                                        onClick={() => setShowPassword((prev) => !prev)}
-                                    >
-                                        {showPassword ? <HiEyeOff size={20} /> : <HiEye size={20} />}
-                                    </button>
-                                </div>
-                                {errors.password && <span className="error" style={{ fontSize: '0.8rem', color: 'var(--danger)', marginTop: '0.25rem' }}>{errors.password}</span>}
-                            </div>
-
-                            <button type="submit" disabled={loading} className="btn btn-primary login-btn" style={{ padding: '1rem', borderRadius: '14px', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', marginTop: '1rem' }}>
-                                {loading ? "Authenticating..." : <><HiArrowRight /> Sign In</>}
+                        <div className={styles.stackActions}>
+                            <button className={styles.primaryBtn} type="submit" disabled={loading}>
+                                {loading ? "Authenticating..." : "Sign In"}
                             </button>
-                        </form>
-
-                        <div className="login-card__footer" style={{ marginTop: '2rem', paddingTop: '2rem', borderTop: '1px solid #f1f5f9', textAlign: 'center' }}>
-                            <p style={{ margin: '0.5rem 0' }}>
-                                Forgot password?{" "}
-                                <Link to="/forgot-password" style={{ fontWeight: 700, color: 'var(--brand)' }}>
-                                    Recover access
-                                </Link>
-                            </p>
-                            <p style={{ margin: '0.5rem 0' }}>
-                                Don't have an account?{" "}
-                                <Link to="/signup" style={{ fontWeight: 700, color: 'var(--brand)' }}>
-                                    Join the evolution
-                                </Link>
-                            </p>
+                            <button
+                                className={styles.secondaryBtn}
+                                type="button"
+                                disabled={loading}
+                                onClick={handleGoogleLogin}
+                            >
+                                Continue with Google
+                            </button>
                         </div>
+                    </form>
+
+                    <div className={styles.footText}>
+                        <p>
+                            Forgot password? <Link className={styles.link} to="/forgot-password">Recover access</Link>
+                        </p>
+                        <p>
+                            Do not have an account? <Link className={styles.link} to="/signup">Create one</Link>
+                        </p>
                     </div>
                 </section>
-            </div>
-
-            <footer className="login-page__footer">
-                {new Date().getFullYear()} Smart Campus. All rights reserved.
-            </footer>
+            </main>
         </div>
     );
 }

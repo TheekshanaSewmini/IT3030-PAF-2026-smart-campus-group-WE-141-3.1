@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import Login from "./pages/auth/Login.jsx";
 import Signup from "./pages/auth/Signup.jsx";
+import OAuthSuccess from "./pages/auth/OAuthSuccess.jsx";
 import VerifyOtp from "./pages/auth/VerifyOtp.jsx";
 import ForgotPassword from "./pages/user/ForgotPassword.jsx";
 import Home from "./pages/user/Home.jsx";
@@ -19,6 +20,7 @@ export default function App() {
                 <Route path="/" element={<Navigate to="/login" replace />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
+                <Route path="/oauth-success" element={<OAuthSuccess />} />
                 <Route path="/verify" element={<VerifyOtp />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
 
