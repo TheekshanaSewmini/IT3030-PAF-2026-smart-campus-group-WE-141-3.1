@@ -166,7 +166,7 @@ export default function ForgotPassword() {
                     </div>
                 </section>
 
-                <section className={`${styles.card} ${styles.glass}`}>
+                <section className={`${styles.card} ${styles.glass} ${styles.advancedPatternCard}`}>
                     <div className={styles.cardHeader}>
                         <div>
                             <p className={styles.eyebrow}>Recover Account</p>

@@ -1,10 +1,9 @@
 .screen {
     min-height: 100vh;
     background:
-        radial-gradient(circle at 74% 62%, rgba(147, 197, 253, 0.2) 0, transparent 35%),
-        radial-gradient(circle at 10% 10%, rgba(59, 130, 246, 0.18) 0, transparent 34%),
-        radial-gradient(circle at 92% 14%, rgba(148, 163, 184, 0.2) 0, transparent 36%),
-        radial-gradient(circle at 86% 90%, rgba(14, 165, 233, 0.12) 0, transparent 32%),
+        radial-gradient(circle at 74% 62%, rgba(147, 197, 253, 0.16) 0, transparent 34%),
+        radial-gradient(circle at 10% 10%, rgba(59, 130, 246, 0.13) 0, transparent 32%),
+        radial-gradient(circle at 92% 14%, rgba(148, 163, 184, 0.14) 0, transparent 33%),
         linear-gradient(158deg, #f8fafd 0%, #eff4fa 46%, #e8eef6 100%);
     color: #0f172a;
     padding: 2rem 1rem;
@@ -13,7 +12,24 @@
 }
 
 .screen::before {
-    content: none;
+    content: "";
+    position: absolute;
+    left: -118px;
+    bottom: -124px;
+    width: 430px;
+    height: 300px;
+    border-radius: 58% 42% 61% 39% / 49% 58% 42% 51%;
+    border: 1px solid rgba(59, 130, 246, 0.18);
+    background:
+        radial-gradient(circle at 24% 24%, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0) 58%),
+        radial-gradient(circle at 74% 72%, rgba(125, 211, 252, 0.25), rgba(125, 211, 252, 0) 60%),
+        linear-gradient(145deg, rgba(219, 234, 254, 0.7), rgba(191, 219, 254, 0.28)),
+        repeating-linear-gradient(136deg, rgba(59, 130, 246, 0.14) 0 1px, transparent 1px 11px),
+        repeating-linear-gradient(46deg, rgba(14, 165, 233, 0.12) 0 1px, transparent 1px 13px);
+    box-shadow: 0 22px 44px rgba(59, 130, 246, 0.14);
+    opacity: 0.76;
+    transform: rotate(-9deg);
+    pointer-events: none;
 }
 
 .screen::after {
@@ -22,10 +38,11 @@
     inset: 0;
     background-image:
         linear-gradient(130deg, rgba(255, 255, 255, 0.56) 0%, rgba(255, 255, 255, 0) 42%),
-        radial-gradient(circle at 82% 82%, rgba(29, 78, 216, 0.09) 0%, transparent 40%),
-        radial-gradient(circle at 22% 28%, rgba(255, 255, 255, 0.26) 0%, transparent 28%),
+        radial-gradient(circle at 84% 16%, rgba(191, 219, 254, 0.24) 0%, transparent 24%),
+        radial-gradient(circle at 22% 28%, rgba(255, 255, 255, 0.17) 0%, transparent 24%),
         radial-gradient(rgba(15, 23, 42, 0.045) 1px, transparent 1px);
     background-size: auto, auto, auto, 22px 22px;
+    opacity: 0.92;
     pointer-events: none;
 }
 
@@ -43,14 +60,16 @@
     position: absolute;
     top: -52px;
     right: 8px;
-    width: 142px;
-    height: 88px;
-    border-radius: 24px;
-    background: transparent;
-    border: 1px solid rgba(59, 130, 246, 0.35);
-    box-shadow: 0 8px 16px rgba(59, 130, 246, 0.08);
-    opacity: 0.9;
-    transform: rotate(-31deg);
+    width: 164px;
+    height: 98px;
+    border-radius: 28px;
+    background:
+        linear-gradient(152deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.02)),
+        repeating-linear-gradient(132deg, rgba(59, 130, 246, 0.16) 0 1px, transparent 1px 9px);
+    border: 1px solid rgba(59, 130, 246, 0.28);
+    box-shadow: 0 10px 20px rgba(59, 130, 246, 0.1);
+    opacity: 0.74;
+    transform: rotate(-24deg);
     pointer-events: none;
     z-index: 0;
 }
@@ -58,15 +77,18 @@
 .shell::after {
     content: "";
     position: absolute;
-    top: -6px;
-    right: 38px;
-    width: 142px;
-    height: 88px;
-    border-radius: 24px;
-    background: linear-gradient(152deg, rgba(121, 99, 255, 0.88), rgba(83, 142, 242, 0.9));
-    border: 1px solid rgba(102, 126, 234, 0.28);
-    box-shadow: 0 14px 26px rgba(78, 99, 205, 0.2);
-    transform: rotate(-31deg);
+    top: 10px;
+    right: 46px;
+    width: 160px;
+    height: 96px;
+    border-radius: 28px;
+    background:
+        radial-gradient(circle at 24% 28%, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0) 58%),
+        linear-gradient(152deg, rgba(99, 102, 241, 0.72), rgba(59, 130, 246, 0.84));
+    border: 1px solid rgba(102, 126, 234, 0.24);
+    box-shadow: 0 16px 28px rgba(78, 99, 205, 0.18);
+    transform: rotate(-24deg);
+    opacity: 0.92;
     pointer-events: none;
     z-index: 0;
 }
@@ -123,18 +145,33 @@
 }
 
 .visual::before {
-    content: none;
+    content: "";
+    position: absolute;
+    left: -40px;
+    bottom: 22px;
+    width: 180px;
+    height: 68px;
+    border-radius: 999px;
+    background: radial-gradient(
+        circle at 36% 40%,
+        rgba(255, 255, 255, 0.28),
+        rgba(255, 255, 255, 0.04) 62%,
+        transparent 80%
+    );
+    opacity: 0.42;
+    filter: blur(1px);
+    pointer-events: none;
 }
 
 .visual::after {
     content: "";
     position: absolute;
-    inset: -50% -10% auto auto;
-    width: 360px;
-    height: 360px;
+    inset: -36% -6% auto auto;
+    width: 260px;
+    height: 260px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.12);
-    filter: blur(2px);
+    background: rgba(255, 255, 255, 0.09);
+    filter: blur(1px);
 }
 
 .brandRow {
@@ -221,6 +258,43 @@
     padding: 1.6rem 1.4rem 1.25rem;
     position: relative;
     overflow: hidden;
+}
+
+.advancedPatternCard {
+    overflow: visible;
+    background:
+        linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.82)),
+        radial-gradient(circle at 18% 16%, rgba(191, 219, 254, 0.32), transparent 42%),
+        repeating-linear-gradient(140deg, rgba(37, 99, 235, 0.05) 0 1px, transparent 1px 14px);
+}
+
+.advancedPatternCard::before {
+    content: "";
+    position: absolute;
+    right: -54px;
+    top: 24px;
+    width: 156px;
+    height: 156px;
+    border-radius: 34px;
+    border: 1px solid rgba(59, 130, 246, 0.22);
+    background:
+        radial-gradient(circle at 28% 28%, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0) 56%),
+        repeating-conic-gradient(from 20deg, rgba(59, 130, 246, 0.14) 0deg 10deg, transparent 10deg 24deg),
+        repeating-linear-gradient(45deg, rgba(96, 165, 250, 0.14) 0 1px, transparent 1px 9px),
+        linear-gradient(146deg, rgba(255, 255, 255, 0.78), rgba(191, 219, 254, 0.36));
+    box-shadow: 0 16px 28px rgba(59, 130, 246, 0.18);
+    transform: rotate(8deg);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.advancedPatternCard::after {
+    content: none;
+}
+
+.advancedPatternCard > * {
+    position: relative;
+    z-index: 1;
 }
 
 .card::before,
@@ -508,11 +582,32 @@
         display: none;
     }
 
+    .advancedPatternCard::before,
+    .advancedPatternCard::after {
+        display: none;
+    }
+
+    .screen::before {
+        left: -74px;
+        bottom: -66px;
+        width: 280px;
+        height: 210px;
+        opacity: 0.58;
+    }
+
 }
 
 @media (max-width: 720px) {
     .screen {
         padding: 1rem 0.6rem;
+    }
+
+    .screen::before {
+        left: -56px;
+        bottom: -48px;
+        width: 198px;
+        height: 146px;
+        opacity: 0.5;
     }
 
     .card,

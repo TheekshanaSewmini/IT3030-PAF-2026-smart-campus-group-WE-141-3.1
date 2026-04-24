@@ -97,7 +97,7 @@ export default function Signup() {
 
     return (
         <div className={styles.screen}>
-            <main className={`${styles.shell} ${styles.split} ${styles.authRoute}`}>
+            <main className={`${styles.shell} ${styles.split} ${styles.authRoute} ${styles.signupRoute}`}>
                 <section className={`${styles.visual} ${styles.glass}`}>
                     <div>
                         <div className={styles.brandRow}>
@@ -126,7 +126,7 @@ export default function Signup() {
                     </div>
                 </section>
 
-                <section className={`${styles.cardWide} ${styles.glass}`}>
+                <section className={`${styles.cardWide} ${styles.glass} ${styles.signupCard} ${styles.advancedPatternCard}`}>
                     <div className={styles.cardHeader}>
                         <div>
                             <p className={styles.eyebrow}>Create Account</p>

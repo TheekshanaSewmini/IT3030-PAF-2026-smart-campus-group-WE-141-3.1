@@ -151,7 +151,7 @@ export default function Login() {
                     </div>
                 </section>
 
-                <section className={`${styles.card} ${styles.glass}`}>
+                <section className={`${styles.card} ${styles.glass} ${styles.advancedPatternCard}`}>
                     <div className={styles.cardHeader}>
                         <div>
                             <p className={styles.eyebrow}>Welcome Back</p>
