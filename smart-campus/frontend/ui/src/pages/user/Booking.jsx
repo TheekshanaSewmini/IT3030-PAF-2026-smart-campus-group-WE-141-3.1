@@ -2,8 +2,23 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api, { bookingApi, resourceApi } from "../../api";
 import AppNavbar from "../../components/AppNavbar";
-import { HiSearch, HiCheckCircle, HiXCircle, HiClock, HiCheck, HiX, HiTrash, HiClipboardList, HiShieldExclamation, HiBell, HiCalendar, HiPlus, HiAcademicCap } from "react-icons/hi";
+import { 
+    HiSearch, 
+    HiCheckCircle, 
+    HiClock, 
+    HiCheck, 
+    HiX, 
+    HiTrash, 
+    HiClipboardList, 
+    HiBell, 
+    HiCalendar, 
+    HiPlus, 
+    HiAcademicCap,
+    HiArrowRight,
+    HiOutlineInformationCircle
+} from "react-icons/hi";
 import { normalizeRole } from "../../utils/roleHome";
+import styles from "./Booking.module.css";
 
 function getErrorMessage(error, fallback) {
     const payload = error?.response?.data;
@@ -16,7 +31,7 @@ function safeFormatDate(dateText) {
     try {
         if (!dateText) return "-";
         const parsed = new Date(`${dateText}T00:00:00`);
-        return parsed.toLocaleDateString();
+        return parsed.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     } catch { return String(dateText); }
 }
 
@@ -31,10 +46,6 @@ function safeFormatTime(timeText) {
         d.setHours(h, m, 0, 0);
         return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     } catch { return String(timeText); }
-}
-
-function statusClass(status) {
-    return `status-badge booking-status ${(status || "").toLowerCase()}`;
 }
 
 export default function Booking() {
@@ -70,16 +81,17 @@ export default function Booking() {
         try {
             setLoading(true);
             const [p, m, r] = await Promise.all([
-                api.get("/user/me"), 
+                api.get("/auth/me"), 
                 bookingApi.getMy(), 
                 resourceApi.getAll()
             ]);
             
-            setProfileData(p.data);
+            const user = p.data?.user || p.data;
+            setProfileData(user);
             setMyBookings(Array.isArray(m.data) ? m.data : []);
             setResources(Array.isArray(r.data) ? r.data : []);
 
-            if (normalizeRole(p.data?.role) === "ADMIN") {
+            if (normalizeRole(user?.role) === "ADMIN") {
                 const [pn, al] = await Promise.all([bookingApi.getPending(), bookingApi.getAll()]);
                 setPendingBookings(Array.isArray(pn.data) ? pn.data : []);
                 setAllBookings(Array.isArray(al.data) ? al.data : []);
@@ -94,7 +106,6 @@ export default function Booking() {
 
     useEffect(() => { loadData(); }, []);
 
-    // Availability Check Logic
     const handleCheckAvailability = async () => {
         if (!selectedResourceId || !bookingDate) {
             setNotice({ type: "error", text: "Please select both resource and date." });
@@ -144,7 +155,12 @@ export default function Booking() {
         }
     };
 
-    if (loading) return <div className="loading-center"><div className="spinner" /></div>;
+    if (loading) return (
+        <div className="loading-center">
+            <div className={styles.texture} />
+            <div className="spinner" />
+        </div>
+    );
 
     const stats = {
         pending: isAdmin ? pendingBookings.length : myBookings.filter(b => b.status === 'PENDING').length,
@@ -153,54 +169,50 @@ export default function Booking() {
     };
 
     return (
-        <div className="page-shell">
-            <div className="bg-layer bg-user" />
-            <div className="panel page-panel">
-                <AppNavbar title="Reservations" subtitle="Secure your campus resource allocations." profile={profileData} />
+        <div className={styles.page}>
+            <div className={styles.texture} />
+            <div className={styles.container}>
+                <AppNavbar title="Booking" subtitle="Reservations Terminal" profile={profileData} />
 
-                <main className="dashboard-content" style={{ padding: '0 1.5rem 2.5rem' }}>
+                <main>
                     {error && <div className="message error glass-alert">{error}</div>}
                     {notice.text && <div className={`message ${notice.type} glass-alert`}>{notice.text}</div>}
 
-                    {/* Quick Stats Grid */}
-                    <div className="stats-dashboard" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
-                        <div className="stat-card glass-card">
-                            <div className="stat-icon stats-icon--blue"><HiBell /></div>
-                            <div className="stat-info">
-                                <h4 className="stat-label">Action Required</h4>
-                                <p className="stat-value">{stats.pending}</p>
+                    <div className={styles.statsGrid}>
+                        <div className={styles.statCard}>
+                            <div className={`${styles.statIcon} ${styles.iconBlue}`}><HiBell /></div>
+                            <div className={styles.statInfo}>
+                                <h4>Action Required</h4>
+                                <p>{stats.pending}</p>
                             </div>
                         </div>
-                        <div className="stat-card glass-card">
-                            <div className="stat-icon stats-icon--green"><HiCheckCircle /></div>
-                            <div className="stat-info">
-                                <h4 className="stat-label">Confirmed</h4>
-                                <p className="stat-value">{stats.approved}</p>
+                        <div className={styles.statCard}>
+                            <div className={`${styles.statIcon} ${styles.iconGreen}`}><HiCheckCircle /></div>
+                            <div className={styles.statInfo}>
+                                <h4>Confirmed</h4>
+                                <p>{stats.approved}</p>
                             </div>
                         </div>
-                        <div className="stat-card glass-card">
-                            <div className="stat-icon stats-icon--purple"><HiClipboardList /></div>
-                            <div className="stat-info">
-                                <h4 className="stat-label">System Load</h4>
-                                <p className="stat-value">Stable</p>
+                        <div className={styles.statCard}>
+                            <div className={`${styles.statIcon} ${styles.iconPurple}`}><HiClipboardList /></div>
+                            <div className={styles.statInfo}>
+                                <h4>Total Logs</h4>
+                                <p>{stats.total}</p>
                             </div>
                         </div>
                     </div>
 
-                    {/* Workspace Control Section */}
-                    <section className="glass-panel" style={{ padding: '2rem', background: 'rgba(255,255,255,0.7)', borderRadius: '24px' }}>
-                        <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                    <section className={styles.mainSection}>
+                        <div className={styles.sectionHeader}>
                             <div>
-                                <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800 }}>
-                                    {isAdmin ? "Management Terminal" : "My Reservation Log"}
-                                </h3>
-                                <p className="muted" style={{ margin: '0.2rem 0 0' }}>Track and manage your institutional resource access.</p>
+                                <h3>{isAdmin ? "Institutional Terminal" : "My Reservation Log"}</h3>
+                                <p>Track and manage campus resource allocations in real-time.</p>
                             </div>
-                            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                            <div className={styles.headerActions}>
                                 {isAdmin && (
                                     <div className="tab-group" style={{ background: '#f1f5f9', padding: '0.35rem', borderRadius: '12px', display: 'flex', gap: '0.5rem' }}>
-                                        <button className={`tab-btn ${viewMode === 'PE' ? 'active' : ''}`} onClick={() => setViewMode('PE')} style={{ border: 'none', padding: '0.5rem 1rem', borderRadius: '9px', fontWeight: 700, cursor: 'pointer', background: viewMode === 'PE' ? '#fff' : 'transparent', boxShadow: viewMode === 'PE' ? '0 4px 10px rgba(0,0,0,0.05)' : 'none' }}>Active</button>
-                                        <button className={`tab-btn ${viewMode === 'ALL' ? 'active' : ''}`} onClick={() => setViewMode('ALL')} style={{ border: 'none', padding: '0.5rem 1rem', borderRadius: '9px', fontWeight: 700, cursor: 'pointer', background: viewMode === 'ALL' ? '#fff' : 'transparent', boxShadow: viewMode === 'ALL' ? '0 4px 10px rgba(0,0,0,0.05)' : 'none' }}>History</button>
+                                        <button className={`tab-btn ${viewMode === 'PE' ? 'active' : ''}`} onClick={() => setViewMode('PE')}>Active</button>
+                                        <button className={`tab-btn ${viewMode === 'ALL' ? 'active' : ''}`} onClick={() => setViewMode('ALL')}>History</button>
                                     </div>
                                 )}
                                 <button className="btn btn-primary" onClick={() => setIsFormOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -209,36 +221,42 @@ export default function Booking() {
                             </div>
                         </div>
 
-                        <div className="booking-list" style={{ display: 'grid', gap: '1rem' }}>
+                        <div className={styles.bookingList}>
                             {(isAdmin ? (viewMode === 'PE' ? pendingBookings : allBookings) : myBookings).map(b => (
-                                <article key={b.bookingId} className="booking-card glass-card" style={{ padding: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid var(--line-soft)' }}>
-                                    <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
-                                        <div style={{ padding: '0.75rem', background: 'var(--brand-soft)', color: 'var(--brand)', borderRadius: '12px' }}><HiCalendar size={20} /></div>
-                                        <div>
-                                            <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800 }}>{b.title}</h4>
-                                            <p className="muted" style={{ margin: '0.2rem 0 0', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                <HiAcademicCap /> {b.facilityName} | <HiClock /> {safeFormatDate(b.bookingDate)} • {safeFormatTime(b.startTime)}
-                                            </p>
+                                <article key={b.bookingId} className={styles.bookingCard}>
+                                    <div className={styles.bookingInfo}>
+                                        <div className={styles.bookingIcon}><HiCalendar size={22} /></div>
+                                        <div className={styles.bookingTitle}>
+                                            <h4>{b.title}</h4>
+                                            <div className={styles.bookingMeta}>
+                                                <div className={styles.metaItem}><HiAcademicCap /> {b.facilityName}</div>
+                                                <div className={styles.metaItem}>•</div>
+                                                <div className={styles.metaItem}><HiClock /> {safeFormatDate(b.bookingDate)} at {safeFormatTime(b.startTime)}</div>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                                        <span className={statusClass(b.status)}>{b.status}</span>
+                                    <div className={styles.bookingActions}>
+                                        <span className={`${styles.statusBadge} status-badge booking-status ${(b.status || "").toLowerCase()}`}>
+                                            {b.status}
+                                        </span>
                                         {isAdmin && b.status === 'PENDING' && (
                                             <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                <button className="icon-btn-success" onClick={() => handleAdminAction(b.bookingId, 'approve')} style={{ background: '#ecfdf5', color: '#059669', border: 'none', padding: '0.5rem', borderRadius: '8px', cursor: 'pointer' }}><HiCheck /></button>
-                                                <button className="icon-btn-danger" onClick={() => handleAdminAction(b.bookingId, 'reject')} style={{ background: '#fff1f2', color: '#e11d48', border: 'none', padding: '0.5rem', borderRadius: '8px', cursor: 'pointer' }}><HiX /></button>
+                                                <button className="icon-btn-success" onClick={() => handleAdminAction(b.bookingId, 'approve')}><HiCheck /></button>
+                                                <button className="icon-btn-danger" onClick={() => handleAdminAction(b.bookingId, 'reject')}><HiX /></button>
                                             </div>
                                         )}
                                         {(!isAdmin || b.status !== 'PENDING') && (
-                                            <button className="btn-ghost" onClick={() => handleAdminAction(b.bookingId, 'cancel')} style={{ border: 'none', background: 'transparent', color: '#94a3b8', padding: '0.5rem', cursor: 'pointer' }}><HiTrash /></button>
+                                            <button className="btn-ghost" onClick={() => handleAdminAction(b.bookingId, 'cancel')} style={{ color: '#94a3b8' }}><HiTrash /></button>
                                         )}
                                     </div>
                                 </article>
                             ))}
+                            
                             {(isAdmin ? (viewMode === 'PE' ? pendingBookings : allBookings) : myBookings).length === 0 && (
-                                <div style={{ textAlign: 'center', padding: '4rem', opacity: 0.5 }}>
-                                    <HiShuffle size={48} style={{ marginBottom: '1rem' }} />
-                                    <p>No transactions identified in current filter.</p>
+                                <div style={{ textAlign: 'center', padding: '6rem 2rem', opacity: 0.3 }}>
+                                    <HiClipboardList size={64} style={{ marginBottom: '1.5rem' }} />
+                                    <h3>No reservations found</h3>
+                                    <p>Your institutional access logs are currently empty.</p>
                                 </div>
                             )}
                         </div>
@@ -246,75 +264,129 @@ export default function Booking() {
                 </main>
             </div>
 
-            {/* Smart Booking Modal */}
+            {/* FULL UI RESERVATION FORM */}
             {isFormOpen && (
-                <div className="modern-modal-overlay" onClick={() => setIsFormOpen(false)}>
-                    <div className="modern-modal-content" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <div>
-                                <h3 style={{ margin: 0 }}>New Reservation Request</h3>
-                                <p className="muted" style={{ margin: 0 }}>Step 1: Check availability</p>
-                            </div>
-                            <button className="close-modal-btn" onClick={() => setIsFormOpen(false)}><HiX size={24} /></button>
+                <div className={styles.formOverlay}>
+                    <aside className={styles.formSidebar}>
+                        <div className={styles.sidebarHeader}>
+                            <h2>Campus<br/>Reservations</h2>
+                            <p>Follow the streamlined process to secure campus equipment or facility space.</p>
                         </div>
+                        <div className={styles.stepList}>
+                            <div className={`${styles.step} ${!resourceAvailability ? styles.stepActive : ''}`}>
+                                <div className={styles.stepNumber}>1</div>
+                                <div className={styles.stepLabel}>Select & Verify</div>
+                            </div>
+                            <div className={`${styles.step} ${resourceAvailability && !selectedSlot ? styles.stepActive : ''}`}>
+                                <div className={styles.stepNumber}>2</div>
+                                <div className={styles.stepLabel}>Time Allocation</div>
+                            </div>
+                            <div className={`${styles.step} ${selectedSlot ? styles.stepActive : ''}`}>
+                                <div className={styles.stepNumber}>3</div>
+                                <div className={styles.stepLabel}>Finalize Submission</div>
+                            </div>
+                        </div>
+                        <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#94a3b8', fontSize: '0.85rem' }}>
+                            <HiOutlineInformationCircle size={20} />
+                            <span>Your request will be sent to the department admin for approval.</span>
+                        </div>
+                    </aside>
 
-                        <div className="modal-body" style={{ padding: '0 2rem 2rem' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
-                                <div className="form-group">
-                                    <span>Select Resource</span>
-                                    <select value={selectedResourceId} onChange={e => setSelectedResourceId(e.target.value)}>
-                                        <option value="">Choose Asset...</option>
-                                        {resources.map(r => <option key={r.id} value={r.id}>{r.name} ({r.location})</option>)}
+                    <main className={styles.formMain}>
+                        <button className={styles.closeForm} onClick={() => setIsFormOpen(false)}>
+                            <HiX size={24} />
+                        </button>
+
+                        <div className={styles.formContent}>
+                            <header className={styles.formTitle}>
+                                <h3>New Reservation</h3>
+                                <p>Provide details to verify real-time availability.</p>
+                            </header>
+
+                            <div className={styles.formGrid}>
+                                <div className={styles.fieldGroup}>
+                                    <label className={styles.fieldLabel}>Resource Asset</label>
+                                    <select 
+                                        className={styles.select}
+                                        value={selectedResourceId} 
+                                        onChange={e => setSelectedResourceId(e.target.value)}
+                                    >
+                                        <option value="">Choose an institutional asset...</option>
+                                        {resources.map(r => (
+                                            <option key={r.id} value={r.id}>
+                                                {r.name} — {r.location}
+                                            </option>
+                                        ))}
                                     </select>
                                 </div>
-                                <div className="form-group">
-                                    <span>Reservation Date</span>
-                                    <input type="date" value={bookingDate} onChange={e => setBookingDate(e.target.value)} />
+                                <div className={styles.fieldGroup}>
+                                    <label className={styles.fieldLabel}>Reservation Date</label>
+                                    <input 
+                                        type="date" 
+                                        className={styles.input}
+                                        value={bookingDate} 
+                                        onChange={e => setBookingDate(e.target.value)} 
+                                    />
                                 </div>
+                                
+                                <button 
+                                    className={styles.verifyBtn} 
+                                    onClick={handleCheckAvailability} 
+                                    disabled={checkingAvailability || !selectedResourceId}
+                                >
+                                    {checkingAvailability ? (
+                                        <HiClock className="spin" />
+                                    ) : (
+                                        <HiSearch />
+                                    )}
+                                    {checkingAvailability ? "Synchronizing..." : "Check Availability"}
+                                </button>
                             </div>
 
-                            <button className="btn btn-primary" onClick={handleCheckAvailability} disabled={checkingAvailability} style={{ width: '100%', marginBottom: '2rem' }}>
-                                {checkingAvailability ? <><HiClock className="spin" /> Synchronizing...</> : <><HiSearch /> Verify Availability</>}
-                            </button>
-
                             {resourceAvailability && (
-                                <div className="availability-grid" style={{ marginTop: '1.5rem' }}>
-                                     <h4 style={{ marginBottom: '1rem' }}>Available Time Slots</h4>
-                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '0.75rem' }}>
+                                <div className={styles.slotsSection}>
+                                    <h4>Available Time Allocations</h4>
+                                    <div className={styles.slotGrid}>
                                         {(resourceAvailability.slots || []).map((slot, i) => (
                                             <button 
                                                 key={i} 
-                                                className={`slot-btn ${selectedSlot === slot ? 'active' : ''}`}
+                                                className={`${styles.slotBtn} ${selectedSlot === slot ? styles.slotBtnActive : ''}`}
                                                 onClick={() => setSelectedSlot(slot)}
-                                                style={{ border: '1px solid var(--line-soft)', padding: '0.6rem', borderRadius: '10px', background: selectedSlot === slot ? 'var(--brand)' : '#fff', color: selectedSlot === slot ? '#fff' : 'inherit', cursor: 'pointer', textAlign: 'center', fontWeight: 600 }}
                                             >
                                                 {safeFormatTime(slot.startTime)}
                                             </button>
                                         ))}
-                                     </div>
-                                     {selectedSlot && (
-                                         <div className="form-group" style={{ marginTop: '1.5rem' }}>
-                                             <span>Reservation Purpose / Title</span>
-                                             <input value={bookingTitle} onChange={e => setBookingTitle(e.target.value)} placeholder="e.g. Physics Tutorial Group A" />
-                                         </div>
-                                     )}
+                                    </div>
+
+                                    {selectedSlot && (
+                                        <div className={styles.fieldGroup} style={{ marginTop: '3rem', animation: 'fadeIn 0.3s ease-out' }}>
+                                            <label className={styles.fieldLabel}>Purpose of Reservation</label>
+                                            <input 
+                                                className={styles.input}
+                                                value={bookingTitle} 
+                                                onChange={e => setBookingTitle(e.target.value)} 
+                                                placeholder="e.g. Project Group Discussion, Research Lab Work..." 
+                                            />
+                                        </div>
+                                    )}
                                 </div>
                             )}
-                        </div>
 
-                        <div className="modal-actions" style={{ display: 'flex', gap: '1rem', padding: '1.5rem 2rem', borderTop: '1px solid var(--line-soft)' }}>
-                            <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => setIsFormOpen(false)}>Discard</button>
-                            <button className="btn btn-primary" style={{ flex: 2 }} onClick={handleCreateBooking} disabled={submitting || !selectedSlot}>
-                                {submitting ? "Finalizing..." : "Submit Reservation"}
-                            </button>
+                            <div className={styles.submitSection}>
+                                <button className={styles.cancelBtn} onClick={() => setIsFormOpen(false)}>Discard Request</button>
+                                <button 
+                                    className={styles.submitBtn} 
+                                    onClick={handleCreateBooking} 
+                                    disabled={submitting || !selectedSlot || !bookingTitle}
+                                >
+                                    {submitting ? "Processing..." : "Finalize Reservation"}
+                                    <HiArrowRight style={{ marginLeft: '0.75rem' }} />
+                                </button>
+                            </div>
                         </div>
-                    </div>
+                    </main>
                 </div>
             )}
         </div>
     );
-}
-
-function HiShuffle({ size, style }) {
-    return <HiClipboardList size={size} style={{ ...style, opacity: 0.3 }} />;
 }

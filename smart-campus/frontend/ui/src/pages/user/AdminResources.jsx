@@ -142,9 +142,7 @@ export default function AdminResources() {
             formData.append("resource", new Blob([JSON.stringify(payload)], { type: "application/json" }));
             formData.append("image", imageFile);
 
-            const response = await api.post("/facilities", formData, {
-                headers: { "Content-Type": "multipart/form-data" },
-            });
+            const response = await api.post("/facilities", formData);
 
             setResources(curr => [response.data, ...curr]);
             setSuccess("Resource cataloged successfully!");
