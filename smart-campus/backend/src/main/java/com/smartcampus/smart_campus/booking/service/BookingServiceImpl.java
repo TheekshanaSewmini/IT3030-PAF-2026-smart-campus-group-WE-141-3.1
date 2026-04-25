@@ -9,6 +9,7 @@ import com.smartcampus.smart_campus.catalog.enums.FacilityAssetStatus;
 import com.smartcampus.smart_campus.catalog.repo.FacilityAssetRepository;
 import com.smartcampus.smart_campus.entities.User;
 import com.smartcampus.smart_campus.enums.Role;
+import com.smartcampus.smart_campus.notification.service.NotificationService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -35,6 +36,7 @@ public class BookingServiceImpl implements BookingService {
 
     private final BookingRepository bookingRepository;
     private final FacilityAssetRepository facilityAssetRepository;
+    private final NotificationService notificationService;
 
     @Transactional
     @Override
@@ -64,7 +66,9 @@ public class BookingServiceImpl implements BookingService {
                 .bookedBy(user)
                 .build();
 
-        return toResponse(bookingRepository.save(booking));
+        Booking savedBooking = bookingRepository.save(booking);
+        notificationService.createAdminNotificationForNewBooking(savedBooking);
+        return toResponse(savedBooking);
     }
 
     @Transactional
@@ -193,6 +197,12 @@ public class BookingServiceImpl implements BookingService {
                         ))
                         .toList();
 
+        List<BookingDto.TimeSlot> slots = calculateAvailableSlots(
+                facilityAsset,
+                bookedSlots,
+                bookingDate
+        );
+
         return new BookingDto.ResourceAvailabilityResponse(
                 facilityAsset.getId(),
                 facilityAsset.getName(),
@@ -200,8 +210,43 @@ public class BookingServiceImpl implements BookingService {
                 bookingDate,
                 facilityAsset.getAvailableFrom(),
                 facilityAsset.getAvailableTo(),
-                bookedSlots
+                slots
         );
+    }
+
+    private List<BookingDto.TimeSlot> calculateAvailableSlots(FacilityAsset asset, List<BookingDto.BookedSlotResponse> booked, LocalDate bookingDate) {
+        java.util.ArrayList<BookingDto.TimeSlot> allSlots = new java.util.ArrayList<>();
+        LocalTime current = asset.getAvailableFrom() != null ? asset.getAvailableFrom() : LocalTime.of(8, 0);
+        LocalTime to = asset.getAvailableTo() != null ? asset.getAvailableTo() : LocalTime.of(17, 0);
+        int duration = asset.getSlotDurationMinutes() != null ? asset.getSlotDurationMinutes() : 60;
+        if (duration <= 0) duration = 60; // Safety fallback
+
+        LocalTime now = LocalTime.now();
+        boolean isToday = bookingDate.isEqual(LocalDate.now());
+
+        while (current.plusMinutes(duration).isBefore(to) || current.plusMinutes(duration).equals(to)) {
+            LocalTime next = current.plusMinutes(duration);
+            
+            // Skip past slots for today
+            if (isToday && current.isBefore(now)) {
+                current = next;
+                continue;
+            }
+            final LocalTime start = current;
+            final LocalTime end = next;
+
+            boolean isOccupied = booked.stream().anyMatch(b -> 
+                (start.isBefore(b.endTime()) && end.isAfter(b.startTime())) ||
+                (start.equals(b.startTime()) || end.equals(b.endTime()))
+            );
+
+            if (!isOccupied) {
+                allSlots.add(new BookingDto.TimeSlot(start, end));
+            }
+            current = next;
+        }
+
+        return allSlots;
     }
 
     @Transactional
@@ -234,7 +279,9 @@ public class BookingServiceImpl implements BookingService {
         );
 
         booking.setStatus(BookingStatus.APPROVED);
-        return toResponse(bookingRepository.save(booking));
+        Booking savedBooking = bookingRepository.save(booking);
+        notificationService.createBookingDecisionNotification(savedBooking, BookingStatus.APPROVED);
+        return toResponse(savedBooking);
     }
 
     @Transactional
@@ -247,7 +294,9 @@ public class BookingServiceImpl implements BookingService {
         }
 
         booking.setStatus(BookingStatus.REJECTED);
-        return toResponse(bookingRepository.save(booking));
+        Booking savedBooking = bookingRepository.save(booking);
+        notificationService.createBookingDecisionNotification(savedBooking, BookingStatus.REJECTED);
+        return toResponse(savedBooking);
     }
 
     private Booking getBookingById(Long bookingId) {

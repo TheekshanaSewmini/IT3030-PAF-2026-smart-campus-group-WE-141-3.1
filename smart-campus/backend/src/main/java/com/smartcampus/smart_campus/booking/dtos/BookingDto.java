@@ -80,6 +80,11 @@ public class BookingDto {
             BookingStatus status
     ) {}
 
+    public record TimeSlot(
+            LocalTime startTime,
+            LocalTime endTime
+    ) {}
+
     public record ResourceAvailabilityResponse(
             Long facilityAssetId,
             String name,
@@ -87,6 +92,6 @@ public class BookingDto {
             LocalDate bookingDate,
             LocalTime availableFrom,
             LocalTime availableTo,
-            List<BookedSlotResponse> bookedSlots
+            List<TimeSlot> availableSlots
     ) {}
 }

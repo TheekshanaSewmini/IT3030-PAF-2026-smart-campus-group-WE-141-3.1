@@ -29,6 +29,7 @@ public class FacilityAssetServiceImpl implements FacilityAssetService {
     private static final Path CATALOG_UPLOAD_DIR = Paths.get("uploads", "catalog");
 
     private final FacilityAssetRepository facilityAssetRepository;
+    private final com.smartcampus.smart_campus.booking.repo.BookingRepository bookingRepository;
 
     @Transactional
     @Override
@@ -130,8 +131,16 @@ public class FacilityAssetServiceImpl implements FacilityAssetService {
     @Override
     public void delete(Long id) {
         FacilityAsset facilityAsset = getEntityById(id);
-        deleteStoredImage(facilityAsset.getImageUrl());
+        String imageUrl = facilityAsset.getImageUrl();
+        
+        // Delete related bookings first to maintain referential integrity
+        bookingRepository.deleteByFacilityAssetId(id);
+        
+        // Delete the database record
         facilityAssetRepository.delete(facilityAsset);
+        
+        // ONLY delete the image after success
+        deleteStoredImage(imageUrl);
     }
 
     private FacilityAsset getEntityById(Long id) {

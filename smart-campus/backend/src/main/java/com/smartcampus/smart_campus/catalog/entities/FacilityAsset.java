@@ -54,6 +54,10 @@ public class FacilityAsset {
     @Column(nullable = false)
     private LocalTime availableTo;
 
+    @Builder.Default
+    @Column(nullable = false)
+    private Integer slotDurationMinutes = 60;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     private FacilityAssetStatus status;
